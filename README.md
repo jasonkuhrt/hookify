@@ -4,15 +4,22 @@
 
 Hookify standardizes hook discovery and execution for Claude and Codex without discarding either agent's native JSON.
 
-## Install Codex
+## Install
 
 One command:
 
 ```sh
-npx hookify install codex
+npx hookify install
 ```
 
-That installs the native Codex bridge once. After that, you edit `.hookify/` files, not Codex hook config.
+Hookify detects Codex and Claude on the machine and installs the native bridge for whichever agents are present. After that, you edit `.hookify/` files, not agent-native hook config.
+
+If you want to target one agent explicitly:
+
+```sh
+npx hookify install codex
+npx hookify install claude
+```
 
 ## Grounding
 
@@ -241,7 +248,7 @@ console.log(execution.output);
 | [`@hookify/core`](packages/core/src/index.ts)                             | Shared primitives              | Filename parsing, applicability checks, environment projection                    |
 | [`@hookify/runtime`](packages/runtime/src/index.ts)                       | Neutral execution engine       | Root resolution, handler discovery, process execution, result aggregation         |
 | [`@hookify/install`](packages/install/src/index.ts)                       | Install artifact generator     | Generated dispatcher sources, native hook config JSON, provenance banner stamping |
-| [`hookify`](packages/cli/src/bin.ts)                                      | npx entrypoint                 | `hookify install codex`                                                           |
+| [`hookify`](packages/cli/src/bin.ts)                                      | npx entrypoint                 | `hookify install`, `hookify install codex`, `hookify install claude`              |
 | [`@hookify/adapter-codex`](packages/adapter-codex/src/index.ts)           | Codex protocol boundary        | Codex event-name mapping, envelope construction, result translation               |
 | [`@hookify/adapter-claude`](packages/adapter-claude/src/index.ts)         | Claude protocol boundary       | Claude event-name mapping and normalized bootstrap for shared fields              |
 | [`@hookify/integration-codex`](packages/integration-codex/src/index.ts)   | Codex installable integration  | End-to-end Codex execution path from native event JSON to Hookify handler output  |

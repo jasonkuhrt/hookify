@@ -1,38 +1,111 @@
 #!/usr/bin/env bun
 
+import { installHookifyClaude } from "@hookify/install/claude";
 import { installHookifyCodex } from "@hookify/install/codex";
+import { detectInstalledHookifyAgents } from "@hookify/install/detect";
+
+type HookifyInstallTarget = "claude" | "codex";
+
+const hookifyInstallTargets = [
+  "codex",
+  "claude",
+] as const satisfies readonly HookifyInstallTarget[];
 
 const main = async (): Promise<void> => {
-  const [command, target] = process.argv.slice(2);
+  const [command, target, ...rest] = process.argv.slice(2);
 
-  if (command === "install" && target === "codex") {
-    const result = await installHookifyCodex({
-      installedVia:
-        process.env.npm_execpath || process.env.npm_lifecycle_event
-          ? "npx:hookify install codex"
-          : "bunx:hookify install codex",
-    });
+  if (command === "install" && rest.length === 0) {
+    const targets =
+      target === undefined ? await detectInstallTargets() : [parseInstallTarget(target)];
+    const outputSections: string[] = [];
 
-    process.stdout.write(
-      [
-        "Hookify for Codex installed.",
-        `Plugin id: ${result.installedPluginId}`,
-        `Generated plugin: ${result.generatedPluginPath}`,
-        `Home plugin link: ${result.pluginLinkPath}`,
-        `Generated dispatcher: ${result.generatedDispatcherPath}`,
-        `Marketplace: ${result.personalMarketplacePath}`,
-        `Codex config: ${result.codexConfigPath}`,
-        `Codex hooks cleanup: ${result.codexHooksPath}`,
-        "Restart Codex to pick up the plugin if it is already running.",
-        "",
-      ].join("\n"),
-    );
+    for (const installTarget of targets) {
+      if (installTarget === "codex") {
+        const result = await installHookifyCodex({
+          installedVia: createInstalledViaLabel(
+            target === undefined ? ["install"] : ["install", installTarget],
+          ),
+        });
+
+        outputSections.push(
+          [
+            "Hookify for Codex installed.",
+            `Plugin id: ${result.installedPluginId}`,
+            `Generated plugin: ${result.generatedPluginPath}`,
+            `Home plugin link: ${result.pluginLinkPath}`,
+            `Generated dispatcher: ${result.generatedDispatcherPath}`,
+            `Marketplace: ${result.personalMarketplacePath}`,
+            `Codex config: ${result.codexConfigPath}`,
+            `Codex hooks cleanup: ${result.codexHooksPath}`,
+            "Restart Codex to pick up the plugin if it is already running.",
+          ].join("\n"),
+        );
+        continue;
+      }
+
+      const result = await installHookifyClaude({
+        installedVia: createInstalledViaLabel(
+          target === undefined ? ["install"] : ["install", installTarget],
+        ),
+      });
+
+      outputSections.push(
+        [
+          "Hookify for Claude installed.",
+          `Plugin id: ${result.installedPluginId}`,
+          `Generated marketplace: ${result.generatedMarketplacePath}`,
+          `Generated plugin: ${result.generatedPluginPath}`,
+          `Generated dispatcher: ${result.generatedDispatcherPath}`,
+          `Claude settings: ${result.claudeSettingsPath}`,
+          "Reload Claude plugins or restart Claude Code if it is already running.",
+        ].join("\n"),
+      );
+    }
+
+    process.stdout.write(`${outputSections.join("\n\n")}\n`);
 
     return;
   }
 
-  process.stderr.write(["Usage:", "  hookify install codex", ""].join("\n"));
+  process.stderr.write(
+    ["Usage:", "  hookify install", "  hookify install codex", "  hookify install claude", ""].join(
+      "\n",
+    ),
+  );
   process.exitCode = 1;
+};
+
+const detectInstallTargets = async (): Promise<HookifyInstallTarget[]> => {
+  const detections = await detectInstalledHookifyAgents();
+  const targets = detections
+    .filter((detection) => detection.installed)
+    .map((detection) => detection.agent);
+
+  if (targets.length > 0) {
+    return targets;
+  }
+
+  throw new Error(
+    "No supported agent installation found. Hookify looked for Codex and Claude commands and home directories.",
+  );
+};
+
+const parseInstallTarget = (target: string): HookifyInstallTarget => {
+  if (isInstallTarget(target)) {
+    return target;
+  }
+
+  throw new Error(`Unknown install target ${JSON.stringify(target)}.`);
+};
+
+const isInstallTarget = (target: string): target is HookifyInstallTarget =>
+  (hookifyInstallTargets as readonly string[]).includes(target);
+
+const createInstalledViaLabel = (commandParts: string[]): string => {
+  const runner =
+    process.env.npm_execpath || process.env.npm_lifecycle_event ? "npx:hookify" : "bunx:hookify";
+
+  return `${runner} ${commandParts.join(" ")}`;
 };
 
 if (import.meta.main) {
