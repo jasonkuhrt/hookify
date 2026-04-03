@@ -10,7 +10,7 @@ Coding agents can run hooks around prompt submission, tool calls, and session li
 
 ## Problem
 
-Teams that want one hook policy across agents end up maintaining two incompatible systems. Shared rules drift because the only common ground is whatever each agent happens to expose, while agent-specific rules become hard to colocate and reason about. Project policy also tends to leak into user-level registration because that is where both agents want hooks installed.
+Teams that want one hook policy across agents end up maintaining two incompatible systems. Shared rules drift because the common ground is smaller than it first looks, while agent-specific rules become hard to colocate and reason about. Even when both agents support project hooks, their registration surfaces, event names, payloads, and output contracts differ enough that “same rule, two agents” turns into duplicate glue code.
 
 ## Solution
 
@@ -84,6 +84,8 @@ An **adapter** is the only place agent quirks belong. An [`adapter`](#adapter) m
 ## Usage
 
 The examples below assume a workspace checkout while the packages are still source-first and unpublished.
+
+For the verified cross-agent event matrix, payload mapping, and output rules, see [docs/hook-authoring.md](docs/hook-authoring.md). For packaging and installer strategy, see [docs/distribution.md](docs/distribution.md).
 
 When you need to decide whether a hook file should run for an agent, parse the filename once and keep the decision in data instead of string-matching ad hoc.
 
