@@ -1,0 +1,12 @@
+{
+  "name": "@hookify/adapter-claude",
+  "version": "0.0.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@hookify/schema": "workspace:*"
+  }
+}
