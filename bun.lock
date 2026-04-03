@@ -35,6 +35,14 @@
         "@hookify/schema": "workspace:*",
       },
     },
+    "packages/integration-claude": {
+      "name": "@hookify/integration-claude",
+      "version": "0.0.0",
+      "dependencies": {
+        "@hookify/adapter-claude": "workspace:*",
+        "@hookify/runtime": "workspace:*",
+      },
+    },
     "packages/integration-codex": {
       "name": "@hookify/integration-codex",
       "version": "0.0.0",
@@ -65,6 +73,8 @@
     "@hookify/adapter-codex": ["@hookify/adapter-codex@workspace:packages/adapter-codex"],
 
     "@hookify/core": ["@hookify/core@workspace:packages/core"],
+
+    "@hookify/integration-claude": ["@hookify/integration-claude@workspace:packages/integration-claude"],
 
     "@hookify/integration-codex": ["@hookify/integration-codex@workspace:packages/integration-codex"],
 

@@ -4,13 +4,13 @@ import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-test("dispatch-codex executes the plugin-facing Codex path end to end", async () => {
-  const workspacePath = await mkdtemp(join(tmpdir(), "hookify-plugin-"));
+test("dispatch-claude executes the Claude-facing path end to end", async () => {
+  const workspacePath = await mkdtemp(join(tmpdir(), "hookify-claude-plugin-"));
 
   try {
     const homeDirectoryPath = join(workspacePath, "home");
     const projectRootPath = join(workspacePath, "repo");
-    const dispatcherPath = join(import.meta.dir, "dispatch-codex.ts");
+    const dispatcherPath = join(import.meta.dir, "dispatch-claude.ts");
 
     await mkdir(join(homeDirectoryPath, ".hookify", "pre-tool-use"), { recursive: true });
     await mkdir(join(projectRootPath, ".git"), { recursive: true });
@@ -18,7 +18,7 @@ test("dispatch-codex executes the plugin-facing Codex path end to end", async ()
 
     await Bun.write(
       join(homeDirectoryPath, ".hookify", "pre-tool-use", "10-warn.all.ts"),
-      `console.log(JSON.stringify({ systemMessage: "user policy" }));`,
+      `console.log(JSON.stringify({ additionalContext: "user policy" }));`,
     );
     await Bun.write(
       join(projectRootPath, ".hookify", "pre-tool-use", "20-block.all.sh"),
@@ -44,8 +44,6 @@ test("dispatch-codex executes the plugin-facing Codex path end to end", async ()
       JSON.stringify({
         cwd: projectRootPath,
         hook_event_name: "PreToolUse",
-        model: "gpt-5.4",
-        permission_mode: "workspace-write",
         session_id: "session_123",
         transcript_path: "/tmp/transcript.jsonl",
         turn_id: "turn_7",
@@ -81,8 +79,8 @@ test("dispatch-codex executes the plugin-facing Codex path end to end", async ()
         hookEventName: "PreToolUse",
         permissionDecision: "deny",
         permissionDecisionReason: "cmux is forbidden",
+        additionalContext: "user policy",
       },
-      systemMessage: "user policy",
     });
   } finally {
     await rm(workspacePath, { recursive: true, force: true });

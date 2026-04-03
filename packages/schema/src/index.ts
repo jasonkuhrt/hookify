@@ -12,14 +12,30 @@ export type HookifyScope = (typeof hookifyScopes)[number];
 export const hookifyEvents = [
   "pre-tool-use",
   "post-tool-use",
+  "post-tool-use-failure",
   "session-start",
+  "instructions-loaded",
   "user-prompt-submit",
   "stop",
+  "stop-failure",
   "notification",
   "permission-request",
+  "permission-denied",
   "session-end",
   "pre-compact",
+  "post-compact",
+  "subagent-start",
   "subagent-stop",
+  "task-created",
+  "task-completed",
+  "teammate-idle",
+  "config-change",
+  "cwd-changed",
+  "file-changed",
+  "worktree-create",
+  "worktree-remove",
+  "elicitation",
+  "elicitation-result",
 ] as const;
 export type HookifyEventName = (typeof hookifyEvents)[number];
 
@@ -84,11 +100,13 @@ export interface HookifyEnvelope<Native = unknown> {
 export interface HookifyBlockResult {
   decision: "block";
   reason: string;
+  additionalContext?: string;
   systemMessage?: string;
 }
 
 export interface HookifyPassResult {
   decision?: "allow";
+  additionalContext?: string;
   systemMessage?: string;
 }
 

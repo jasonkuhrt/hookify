@@ -246,3 +246,48 @@ test("executeHookifyHandlers fails open on invalid JSON and turns plain text std
     await rm(workspacePath, { recursive: true, force: true });
   }
 });
+
+test("aggregate Hookify results preserves additional context alongside warnings and blocks", async () => {
+  const workspacePath = await mkdtemp(join(tmpdir(), "hookify-runtime-"));
+
+  try {
+    const projectRootPath = join(workspacePath, "project");
+
+    await mkdir(join(projectRootPath, ".hookify", "user-prompt-submit"), {
+      recursive: true,
+    });
+
+    await Bun.write(
+      join(projectRootPath, ".hookify", "user-prompt-submit", "10-context.all.ts"),
+      `console.log(JSON.stringify({ additionalContext: "Follow the repo policy." }));`,
+    );
+    await Bun.write(
+      join(projectRootPath, ".hookify", "user-prompt-submit", "20-warning.all.ts"),
+      `console.log(JSON.stringify({ systemMessage: "Heads up." }));`,
+    );
+
+    const report = await executeHookifyHandlers({
+      envelope: {
+        ...createEnvelope(projectRootPath),
+        event: "user-prompt-submit",
+        normalized: {
+          prompt: {
+            text: "Run the task.",
+          },
+        },
+        native: {
+          hook_event_name: "UserPromptSubmit",
+          prompt: "Run the task.",
+        },
+      },
+      roots: [{ scope: "project", rootPath: projectRootPath }],
+    });
+
+    expect(report.aggregatedResult).toEqual({
+      additionalContext: "Follow the repo policy.",
+      systemMessage: "Heads up.",
+    });
+  } finally {
+    await rm(workspacePath, { recursive: true, force: true });
+  }
+});

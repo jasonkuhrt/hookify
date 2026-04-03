@@ -47,19 +47,33 @@ test("createCodexEnvelope normalizes Bash PreToolUse payloads", () => {
 
 test("toCodexOutput preserves block decisions and warnings", () => {
   expect(
-    toCodexOutput({
+    toCodexOutput("pre-tool-use", {
       decision: "block",
       reason: "cmux is forbidden",
       systemMessage: "blocked by policy",
     }),
   ).toEqual({
-    decision: "block",
-    reason: "cmux is forbidden",
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "deny",
+      permissionDecisionReason: "cmux is forbidden",
+    },
     systemMessage: "blocked by policy",
   });
 
   expect(
-    toCodexOutput({
+    toCodexOutput("session-start", {
+      additionalContext: "Load the project guide.",
+    }),
+  ).toEqual({
+    hookSpecificOutput: {
+      hookEventName: "SessionStart",
+      additionalContext: "Load the project guide.",
+    },
+  });
+
+  expect(
+    toCodexOutput("stop", {
       systemMessage: "Heads up",
     }),
   ).toEqual({

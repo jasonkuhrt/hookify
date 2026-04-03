@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { createClaudeEnvelope } from "./index";
+import { createClaudeEnvelope, toClaudeOutput } from "./index";
 
 test("createClaudeEnvelope preserves raw payloads and normalizes shared fields when present", () => {
   const envelope = createClaudeEnvelope({
@@ -27,6 +27,40 @@ test("createClaudeEnvelope preserves raw payloads and normalizes shared fields w
       prompt: {
         text: "please avoid cmux",
       },
+    },
+  });
+});
+
+test("toClaudeOutput maps shared Hookify results into Claude event-specific control shapes", () => {
+  expect(
+    toClaudeOutput("pre-tool-use", {
+      decision: "block",
+      reason: "cmux is forbidden",
+      additionalContext: "User policy applies.",
+    }),
+  ).toEqual({
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "deny",
+      permissionDecisionReason: "cmux is forbidden",
+      additionalContext: "User policy applies.",
+    },
+  });
+
+  expect(
+    toClaudeOutput("user-prompt-submit", {
+      decision: "block",
+      reason: "Prompt rejected",
+      additionalContext: "Project policy reminder.",
+      systemMessage: "Please revise.",
+    }),
+  ).toEqual({
+    decision: "block",
+    reason: "Prompt rejected",
+    systemMessage: "Please revise.",
+    hookSpecificOutput: {
+      hookEventName: "UserPromptSubmit",
+      additionalContext: "Project policy reminder.",
     },
   });
 });

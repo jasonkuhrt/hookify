@@ -1,5 +1,6 @@
 import type {
   HookifyEnvelope,
+  HookifyEventName,
   HookifyNormalizedEvent,
   HookifyResult,
   HookifyScope,
@@ -100,21 +101,74 @@ export const createCodexEnvelope = <TNativeEvent extends CodexNativeEvent>(
 });
 
 export const toCodexOutput = (
+  event: HookifyEventName,
   result: HookifyResult,
 ): {
   decision?: "block";
   reason?: string;
   systemMessage?: string;
+  hookSpecificOutput?: {
+    hookEventName: "SessionStart" | "UserPromptSubmit" | "PostToolUse" | "PreToolUse";
+    additionalContext?: string;
+    permissionDecision?: "deny";
+    permissionDecisionReason?: string;
+  };
 } => {
-  if (result.decision === "block") {
-    return {
-      decision: "block",
-      reason: result.reason,
-      ...(result.systemMessage ? { systemMessage: result.systemMessage } : {}),
+  const output: {
+    decision?: "block";
+    reason?: string;
+    systemMessage?: string;
+    hookSpecificOutput?: {
+      hookEventName: "SessionStart" | "UserPromptSubmit" | "PostToolUse" | "PreToolUse";
+      additionalContext?: string;
+      permissionDecision?: "deny";
+      permissionDecisionReason?: string;
     };
+  } = {};
+
+  if (result.systemMessage) {
+    output.systemMessage = result.systemMessage;
   }
 
-  return result.systemMessage ? { systemMessage: result.systemMessage } : {};
+  if (result.decision === "block") {
+    if (event === "pre-tool-use") {
+      output.hookSpecificOutput = {
+        hookEventName: "PreToolUse",
+        permissionDecision: "deny",
+        permissionDecisionReason: result.reason,
+      };
+
+      return output;
+    }
+
+    output.decision = "block";
+    output.reason = result.reason;
+  }
+
+  if (result.additionalContext) {
+    switch (event) {
+      case "session-start":
+        output.hookSpecificOutput = {
+          hookEventName: "SessionStart",
+          additionalContext: result.additionalContext,
+        };
+        break;
+      case "user-prompt-submit":
+        output.hookSpecificOutput = {
+          hookEventName: "UserPromptSubmit",
+          additionalContext: result.additionalContext,
+        };
+        break;
+      case "post-tool-use":
+        output.hookSpecificOutput = {
+          hookEventName: "PostToolUse",
+          additionalContext: result.additionalContext,
+        };
+        break;
+    }
+  }
+
+  return output;
 };
 
 const normalizeCodexEvent = (native: CodexNativeEvent): HookifyNormalizedEvent => {

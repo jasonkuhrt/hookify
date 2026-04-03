@@ -22,5 +22,6 @@ Use this file when the task is about where Hookify should live.
 - The runtime is shared.
 - Skills are the main user-facing entrypoint.
 - The Codex plugin wrapper in this repo already bundles both skills and plugin-level hooks.
-- Codex plugin packaging is the cleanest first distribution channel.
-- Claude packaging should remain a thin wrapper around the same runtime and skill model.
+- The repo also ships a source-first Claude dispatcher and sample `hooks/hooks.json` wiring under `integrations/claude/hooks/`.
+- Codex still has the cleaner documented plugin/testing story today.
+- Claude packaging should stay thin and reuse the same runtime and skill model.

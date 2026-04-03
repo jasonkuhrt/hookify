@@ -151,16 +151,29 @@ export const aggregateHookifyResults = (
       handler.result.systemMessage ? [handler.result.systemMessage] : [],
     ),
   );
+  const additionalContexts = uniqueNonEmptyStrings(
+    executedHandlers.flatMap((handler) =>
+      handler.result.additionalContext ? [handler.result.additionalContext] : [],
+    ),
+  );
 
   if (blockReasons.length > 0) {
     return {
       decision: "block",
       reason: blockReasons.join("\n\n"),
+      ...(additionalContexts.length > 0
+        ? { additionalContext: additionalContexts.join("\n\n") }
+        : {}),
       ...(systemMessages.length > 0 ? { systemMessage: systemMessages.join("\n\n") } : {}),
     };
   }
 
-  return systemMessages.length > 0 ? { systemMessage: systemMessages.join("\n\n") } : {};
+  return {
+    ...(additionalContexts.length > 0
+      ? { additionalContext: additionalContexts.join("\n\n") }
+      : {}),
+    ...(systemMessages.length > 0 ? { systemMessage: systemMessages.join("\n\n") } : {}),
+  };
 };
 
 export const withScope = <Native>(
@@ -436,18 +449,20 @@ const tryParseHookifyResult = (
 const isHookifyBlockResult = (value: unknown): value is HookifyResult & { decision: "block" } =>
   typeof value === "object" &&
   value !== null &&
-  hasOnlyHookifyResultKeys(value, ["decision", "reason", "systemMessage"]) &&
+  hasOnlyHookifyResultKeys(value, ["decision", "reason", "additionalContext", "systemMessage"]) &&
   "decision" in value &&
   value.decision === "block" &&
   "reason" in value &&
   typeof value.reason === "string" &&
+  (!("additionalContext" in value) || typeof value.additionalContext === "string") &&
   (!("systemMessage" in value) || typeof value.systemMessage === "string");
 
 const isHookifyPassResult = (value: unknown): value is HookifyResult =>
   typeof value === "object" &&
   value !== null &&
-  hasOnlyHookifyResultKeys(value, ["decision", "systemMessage"]) &&
+  hasOnlyHookifyResultKeys(value, ["decision", "additionalContext", "systemMessage"]) &&
   (!("decision" in value) || value.decision === "allow") &&
+  (!("additionalContext" in value) || typeof value.additionalContext === "string") &&
   (!("systemMessage" in value) || typeof value.systemMessage === "string");
 
 const hasOnlyHookifyResultKeys = (value: object, allowedKeys: readonly string[]): boolean =>

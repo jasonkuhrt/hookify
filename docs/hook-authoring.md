@@ -82,6 +82,30 @@ These are the fields Hookify should normalize first. Anything else stays availab
 
 Hookify should expect extra fields that are not yet normalized. Examples include Claude’s `permission_mode`, `agent_type`, `error`, and file-watcher fields, plus Codex fields that appear in the current client before they are fully documented.
 
+## Hookify Handler Output
+
+This is the Hookify-native JSON contract a handler should print when it wants structured control:
+
+```json
+{
+  "decision": "block",
+  "reason": "Explanation for the block",
+  "additionalContext": "Extra context to inject when the event supports it",
+  "systemMessage": "Warning shown to the user"
+}
+```
+
+Field meaning:
+
+| Hookify field       | Meaning                                                                                 | Notes                                                                 |
+| ------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `decision`          | `block` means the handler wants to prevent the action when the native event supports it | Omit or use `allow` to permit normal execution                        |
+| `reason`            | Explanation paired with `decision: "block"`                                             | Required for Hookify block results                                    |
+| `additionalContext` | Extra model context                                                                     | Adapters translate this into each agent’s event-specific context path |
+| `systemMessage`     | Warning shown to the user                                                               | Adapters preserve this when the native event supports warnings        |
+
+If a Hookify handler prints plain text instead of JSON, the runtime currently treats that as a fail-open `systemMessage` convenience rather than native-agent plain-text semantics.
+
 ## Output and Control Matrix
 
 | Goal                                  | Claude                                                                                       | Codex                                                                                                                      | Notes                                                                                   |

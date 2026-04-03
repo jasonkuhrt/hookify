@@ -184,13 +184,19 @@ When you need to hand a block decision back to Codex, translate the Hookify resu
 ```ts
 import { toCodexOutput } from "@hookify/adapter-codex";
 
-const output = toCodexOutput({
+const output = toCodexOutput("pre-tool-use", {
   decision: "block",
   reason: "cmux is forbidden",
 });
 
 console.log(output);
-// { decision: "block", reason: "cmux is forbidden" }
+// {
+//   hookSpecificOutput: {
+//     hookEventName: "PreToolUse",
+//     permissionDecision: "deny",
+//     permissionDecisionReason: "cmux is forbidden"
+//   }
+// }
 ```
 
 When you want the whole Codex path in one call, use the Codex integration. It resolves execution roots, builds the Hookify envelope, executes matching handlers, and translates the result back into Codex-native output.
@@ -205,18 +211,31 @@ const execution = await executeCodexHookify({
 console.log(execution.output);
 ```
 
+When you want the same end-to-end path for Claude, use the Claude integration. It resolves roots, builds the Claude envelope, executes matching Hookify handlers, and translates the result into Claude’s event-specific JSON contract.
+
+```ts
+import { executeClaudeHookify } from "@hookify/integration-claude";
+
+const execution = await executeClaudeHookify({
+  native: claudeNativeEvent,
+});
+
+console.log(execution.output);
+```
+
 ## Package Index
 
-| Package                                                                 | Role                          | Current surface                                                                  |
-| ----------------------------------------------------------------------- | ----------------------------- | -------------------------------------------------------------------------------- |
-| [`@hookify/schema`](packages/schema/src/index.ts)                       | Versioned data contract       | Agents, events, scopes, tool kinds, envelope shape, result shape                 |
-| [`@hookify/core`](packages/core/src/index.ts)                           | Shared primitives             | Filename parsing, applicability checks, environment projection                   |
-| [`@hookify/runtime`](packages/runtime/src/index.ts)                     | Neutral execution engine      | Root resolution, handler discovery, process execution, result aggregation        |
-| [`@hookify/adapter-codex`](packages/adapter-codex/src/index.ts)         | Codex protocol boundary       | Codex event-name mapping, envelope construction, result translation              |
-| [`@hookify/adapter-claude`](packages/adapter-claude/src/index.ts)       | Claude protocol boundary      | Claude event-name mapping and normalized bootstrap for shared fields             |
-| [`@hookify/integration-codex`](packages/integration-codex/src/index.ts) | Codex installable integration | End-to-end Codex execution path from native event JSON to Hookify handler output |
+| Package                                                                   | Role                           | Current surface                                                                   |
+| ------------------------------------------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------- |
+| [`@hookify/schema`](packages/schema/src/index.ts)                         | Versioned data contract        | Agents, events, scopes, tool kinds, envelope shape, result shape                  |
+| [`@hookify/core`](packages/core/src/index.ts)                             | Shared primitives              | Filename parsing, applicability checks, environment projection                    |
+| [`@hookify/runtime`](packages/runtime/src/index.ts)                       | Neutral execution engine       | Root resolution, handler discovery, process execution, result aggregation         |
+| [`@hookify/adapter-codex`](packages/adapter-codex/src/index.ts)           | Codex protocol boundary        | Codex event-name mapping, envelope construction, result translation               |
+| [`@hookify/adapter-claude`](packages/adapter-claude/src/index.ts)         | Claude protocol boundary       | Claude event-name mapping and normalized bootstrap for shared fields              |
+| [`@hookify/integration-codex`](packages/integration-codex/src/index.ts)   | Codex installable integration  | End-to-end Codex execution path from native event JSON to Hookify handler output  |
+| [`@hookify/integration-claude`](packages/integration-claude/src/index.ts) | Claude installable integration | End-to-end Claude execution path from native event JSON to Hookify handler output |
 
-The repo now ships a source-first executable Codex path through [`plugins/hookify/hooks/dispatch-codex.ts`](plugins/hookify/hooks/dispatch-codex.ts) and the plugin-level hook wiring in [`plugins/hookify/hooks.json`](plugins/hookify/hooks.json). The next major gap is the paired Claude integration layer.
+The repo now ships source-first executable paths for both agents: Codex through [`plugins/hookify/hooks/dispatch-codex.ts`](plugins/hookify/hooks/dispatch-codex.ts) with [`plugins/hookify/hooks.json`](plugins/hookify/hooks.json), and Claude through [`integrations/claude/hooks/dispatch-claude.ts`](integrations/claude/hooks/dispatch-claude.ts) with [`integrations/claude/hooks/hooks.json`](integrations/claude/hooks/hooks.json). The next major packaging gap is a first-class Claude plugin wrapper with bundled Hookify skills.
 
 ## Glossary
 

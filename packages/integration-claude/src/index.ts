@@ -1,4 +1,8 @@
-import { createCodexEnvelope, toCodexOutput, type CodexNativeEvent } from "@hookify/adapter-codex";
+import {
+  createClaudeEnvelope,
+  toClaudeOutput,
+  type ClaudeNativeEvent,
+} from "@hookify/adapter-claude";
 import {
   executeHookifyHandlers,
   resolveHookifyRuntimeContext,
@@ -6,30 +10,37 @@ import {
   type HookifyRuntimeContext,
 } from "@hookify/runtime";
 
-export interface ExecuteCodexHookifyOptions<TNativeEvent extends CodexNativeEvent> {
+export interface ExecuteClaudeHookifyOptions<TNativeEvent extends ClaudeNativeEvent> {
   native: TNativeEvent;
   homeDirectory?: string;
   projectRoot?: string;
   gitRoot?: string;
   timeoutMs?: number;
+  cwdFallback?: string;
 }
 
-export interface CodexHookifyExecution<TNativeEvent extends CodexNativeEvent> {
+export interface ClaudeHookifyExecution<TNativeEvent extends ClaudeNativeEvent> {
   context: HookifyRuntimeContext;
   report: HookifyExecutionReport<TNativeEvent>;
-  output: ReturnType<typeof toCodexOutput>;
+  output: ReturnType<typeof toClaudeOutput>;
 }
 
-export const executeCodexHookify = async <TNativeEvent extends CodexNativeEvent>(
-  options: ExecuteCodexHookifyOptions<TNativeEvent>,
-): Promise<CodexHookifyExecution<TNativeEvent>> => {
+export const executeClaudeHookify = async <TNativeEvent extends ClaudeNativeEvent>(
+  options: ExecuteClaudeHookifyOptions<TNativeEvent>,
+): Promise<ClaudeHookifyExecution<TNativeEvent>> => {
   const context = await resolveHookifyRuntimeContext({
-    cwd: options.native.cwd,
+    cwd:
+      (typeof options.native.cwd === "string" && options.native.cwd !== ""
+        ? options.native.cwd
+        : undefined) ??
+      options.cwdFallback ??
+      options.projectRoot ??
+      process.cwd(),
     ...(options.homeDirectory ? { homeDirectory: options.homeDirectory } : {}),
     ...(options.projectRoot ? { projectRoot: options.projectRoot } : {}),
     ...(options.gitRoot ? { gitRoot: options.gitRoot } : {}),
   });
-  const envelope = createCodexEnvelope({
+  const envelope = createClaudeEnvelope({
     native: options.native,
     scope: "project",
     projectRoot: context.projectRoot,
@@ -44,9 +55,9 @@ export const executeCodexHookify = async <TNativeEvent extends CodexNativeEvent>
   return {
     context,
     report,
-    output: toCodexOutput(envelope.event, report.aggregatedResult),
+    output: toClaudeOutput(envelope.event, report.aggregatedResult),
   };
 };
 
-export const parseCodexNativeEvent = (value: string): CodexNativeEvent =>
-  JSON.parse(value) as CodexNativeEvent;
+export const parseClaudeNativeEvent = (value: string): ClaudeNativeEvent =>
+  JSON.parse(value) as ClaudeNativeEvent;

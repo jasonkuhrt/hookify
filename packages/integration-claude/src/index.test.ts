@@ -1,12 +1,12 @@
 import { expect, test } from "bun:test";
-import { mkdir, mkdtemp, realpath, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-import { executeCodexHookify } from "./index";
+import { executeClaudeHookify } from "./index";
 
-test("executeCodexHookify resolves roots, executes handlers, and returns Codex output", async () => {
-  const workspacePath = await mkdtemp(join(tmpdir(), "hookify-codex-"));
+test("executeClaudeHookify resolves roots, executes handlers, and returns Claude output", async () => {
+  const workspacePath = await mkdtemp(join(tmpdir(), "hookify-claude-"));
 
   try {
     const homeDirectoryPath = join(workspacePath, "home");
@@ -15,15 +15,12 @@ test("executeCodexHookify resolves roots, executes handlers, and returns Codex o
     await mkdir(join(homeDirectoryPath, ".hookify", "pre-tool-use"), { recursive: true });
     await mkdir(join(projectRootPath, ".git"), { recursive: true });
     await mkdir(join(projectRootPath, ".hookify", "pre-tool-use"), { recursive: true });
-    const resolvedHomeDirectoryPath = await realpath(homeDirectoryPath);
-    const resolvedProjectRootPath = await realpath(projectRootPath);
 
     await Bun.write(
       join(homeDirectoryPath, ".hookify", "pre-tool-use", "10-explain.all.ts"),
       [
-        "const envelope = JSON.parse(await Bun.stdin.text());",
         "console.log(JSON.stringify({",
-        "  systemMessage: `${process.env.HOOKIFY_SCOPE}:${envelope.normalized.tool.command}`",
+        "  additionalContext: `${process.env.HOOKIFY_SCOPE} policy`",
         "}));",
       ].join("\n"),
     );
@@ -39,13 +36,11 @@ test("executeCodexHookify resolves roots, executes handlers, and returns Codex o
       ].join("\n"),
     );
 
-    const execution = await executeCodexHookify({
+    const execution = await executeClaudeHookify({
       homeDirectory: homeDirectoryPath,
       native: {
         cwd: projectRootPath,
         hook_event_name: "PreToolUse",
-        model: "gpt-5.4",
-        permission_mode: "workspace-write",
         session_id: "session_123",
         transcript_path: "/tmp/transcript.jsonl",
         turn_id: "turn_7",
@@ -57,21 +52,6 @@ test("executeCodexHookify resolves roots, executes handlers, and returns Codex o
       },
     });
 
-    expect(execution.context).toEqual({
-      cwd: resolvedProjectRootPath,
-      projectRoot: resolvedProjectRootPath,
-      gitRoot: resolvedProjectRootPath,
-      roots: [
-        {
-          scope: "user",
-          rootPath: resolvedHomeDirectoryPath,
-        },
-        {
-          scope: "project",
-          rootPath: resolvedProjectRootPath,
-        },
-      ],
-    });
     expect(execution.report.handlers.map((handler) => handler.status)).toEqual([
       "allowed",
       "blocked",
@@ -81,8 +61,8 @@ test("executeCodexHookify resolves roots, executes handlers, and returns Codex o
         hookEventName: "PreToolUse",
         permissionDecision: "deny",
         permissionDecisionReason: "cmux is forbidden",
+        additionalContext: "user policy",
       },
-      systemMessage: "user:cmux list-workspaces",
     });
   } finally {
     await rm(workspacePath, { recursive: true, force: true });

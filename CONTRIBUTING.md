@@ -15,20 +15,22 @@ That is the full local setup today. There are no required environment variables,
 
 Hookify is a small Bun workspace. Root files define the shared toolchain, and each package owns one layer of the design.
 
-| Path                                                                    | Role                                                                                                                                                |
-| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`package.json`](package.json)                                          | Workspace scripts and shared dev dependencies                                                                                                       |
-| [`bunfig.toml`](bunfig.toml)                                            | Bun install and run defaults                                                                                                                        |
-| [`tsconfig.base.json`](tsconfig.base.json)                              | Shared TypeScript settings for every package                                                                                                        |
-| [`README.md`](README.md)                                                | User-facing model and glossary for [`event`](README.md#event), [`scope`](README.md#scope), [`envelope`](README.md#envelope), and other shared terms |
-| [`docs/`](docs/hook-authoring.md)                                       | Deep reference docs such as cross-agent hook authoring and distribution strategy                                                                    |
-| [`plugins/hookify`](plugins/hookify/.codex-plugin/plugin.json)          | Codex-facing plugin wrapper with bundled Hookify skills and plugin-level hooks                                                                      |
-| [`packages/schema`](packages/schema/src/index.ts)                       | Versioned [`envelope`](README.md#envelope) and result contract                                                                                      |
-| [`packages/core`](packages/core/src/index.ts)                           | Shared primitives such as filename parsing and env projection                                                                                       |
-| [`packages/runtime`](packages/runtime/src/index.ts)                     | Neutral root resolution, handler discovery, process execution, and result aggregation                                                               |
-| [`packages/adapter-codex`](packages/adapter-codex/src/index.ts)         | Codex-native event typing, normalization, and response translation                                                                                  |
-| [`packages/adapter-claude`](packages/adapter-claude/src/index.ts)       | Claude-native event typing and normalization bootstrap                                                                                              |
-| [`packages/integration-codex`](packages/integration-codex/src/index.ts) | End-to-end Codex integration that resolves runtime context and executes handlers                                                                    |
+| Path                                                                        | Role                                                                                                                                                |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`package.json`](package.json)                                              | Workspace scripts and shared dev dependencies                                                                                                       |
+| [`bunfig.toml`](bunfig.toml)                                                | Bun install and run defaults                                                                                                                        |
+| [`tsconfig.base.json`](tsconfig.base.json)                                  | Shared TypeScript settings for every package                                                                                                        |
+| [`README.md`](README.md)                                                    | User-facing model and glossary for [`event`](README.md#event), [`scope`](README.md#scope), [`envelope`](README.md#envelope), and other shared terms |
+| [`docs/`](docs/hook-authoring.md)                                           | Deep reference docs such as cross-agent hook authoring and distribution strategy                                                                    |
+| [`plugins/hookify`](plugins/hookify/.codex-plugin/plugin.json)              | Codex-facing plugin wrapper with bundled Hookify skills and plugin-level hooks                                                                      |
+| [`packages/schema`](packages/schema/src/index.ts)                           | Versioned [`envelope`](README.md#envelope) and result contract                                                                                      |
+| [`packages/core`](packages/core/src/index.ts)                               | Shared primitives such as filename parsing and env projection                                                                                       |
+| [`packages/runtime`](packages/runtime/src/index.ts)                         | Neutral root resolution, handler discovery, process execution, and result aggregation                                                               |
+| [`packages/adapter-codex`](packages/adapter-codex/src/index.ts)             | Codex-native event typing, normalization, and response translation                                                                                  |
+| [`packages/adapter-claude`](packages/adapter-claude/src/index.ts)           | Claude-native event typing and normalization bootstrap                                                                                              |
+| [`packages/integration-codex`](packages/integration-codex/src/index.ts)     | End-to-end Codex integration that resolves runtime context and executes handlers                                                                    |
+| [`packages/integration-claude`](packages/integration-claude/src/index.ts)   | End-to-end Claude integration that resolves runtime context and executes handlers                                                                   |
+| [`integrations/claude/hooks`](integrations/claude/hooks/dispatch-claude.ts) | Source-first Claude hook dispatcher and sample `hooks/hooks.json` wiring                                                                            |
 
 Tests live next to the code they protect as `src/*.test.ts`. If you are changing behavior, start in the package that owns that behavior and extend its local test file first.
 
@@ -43,6 +45,8 @@ Tests live next to the code they protect as `src/*.test.ts`. If you are changing
 `@hookify/runtime` owns filesystem-aware execution mechanics. Directory resolution, handler discovery, spawning, fail-open behavior, and result aggregation belong there rather than in adapters or plugin wrappers.
 
 `@hookify/integration-codex` owns the Codex-facing install surface above the runtime. It can depend on the Codex adapter and the runtime, but it should stay thin: read native Codex events, resolve context, execute Hookify handlers, translate the result back to Codex output.
+
+`@hookify/integration-claude` owns the equivalent Claude-facing install surface. It should stay just as thin: read native Claude events, resolve context, execute Hookify handlers, and translate the result back to Claude’s event-specific output contract.
 
 ## Extension Points
 
@@ -76,6 +80,6 @@ When you change shared primitives such as filename parsing or environment projec
 
 When you change execution mechanics such as root discovery, handler ordering, process spawning, or output parsing, keep the change in `@hookify/runtime` and reproduce the behavior with a runtime-local test.
 
-When you fix a bug, reproduce it with a package-local test first. You can run the full suite with `bun run check`, or narrow to one area with `bun test packages/runtime/src` or `bun test packages/integration-codex/src`.
+When you fix a bug, reproduce it with a package-local test first. You can run the full suite with `bun run check`, or narrow to one area with `bun test packages/runtime/src`, `bun test packages/integration-codex/src`, or `bun test packages/integration-claude/src`.
 
 When you prepare a release, run `bun run check`, review the exported surfaces of each package, and make sure README and CONTRIBUTING still describe the current shape of the repo. Hookify is pre-1.0 and package publishing is not wired yet, so keep release work at the repository level until the package boundaries stop moving.
