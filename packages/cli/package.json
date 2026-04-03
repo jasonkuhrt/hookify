@@ -1,0 +1,12 @@
+{
+  "name": "hookify",
+  "version": "0.0.0",
+  "bin": {
+    "hookify": "./src/bin.ts"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "dependencies": {
+    "@hookify/install": "workspace:*"
+  }
+}

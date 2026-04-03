@@ -9,7 +9,7 @@ Hookify standardizes hook discovery and execution for Claude and Codex without d
 One command:
 
 ```sh
-bash <(curl -fsSL https://raw.githubusercontent.com/jasonkuhrt/hookify/main/scripts/install-codex.sh)
+npx hookify install codex
 ```
 
 That installs the native Codex bridge once. After that, you edit `.hookify/` files, not Codex hook config.
@@ -241,6 +241,7 @@ console.log(execution.output);
 | [`@hookify/core`](packages/core/src/index.ts)                             | Shared primitives              | Filename parsing, applicability checks, environment projection                    |
 | [`@hookify/runtime`](packages/runtime/src/index.ts)                       | Neutral execution engine       | Root resolution, handler discovery, process execution, result aggregation         |
 | [`@hookify/install`](packages/install/src/index.ts)                       | Install artifact generator     | Generated dispatcher sources, native hook config JSON, provenance banner stamping |
+| [`hookify`](packages/cli/src/bin.ts)                                      | npx entrypoint                 | `hookify install codex`                                                           |
 | [`@hookify/adapter-codex`](packages/adapter-codex/src/index.ts)           | Codex protocol boundary        | Codex event-name mapping, envelope construction, result translation               |
 | [`@hookify/adapter-claude`](packages/adapter-claude/src/index.ts)         | Claude protocol boundary       | Claude event-name mapping and normalized bootstrap for shared fields              |
 | [`@hookify/integration-codex`](packages/integration-codex/src/index.ts)   | Codex installable integration  | End-to-end Codex execution path from native event JSON to Hookify handler output  |
