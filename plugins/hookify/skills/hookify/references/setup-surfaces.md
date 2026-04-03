@@ -23,5 +23,6 @@ Use this file when the task is about where Hookify should live.
 - Skills are the main user-facing entrypoint.
 - The Codex plugin wrapper in this repo already bundles both skills and plugin-level hooks.
 - The repo also ships a source-first Claude dispatcher and sample `hooks/hooks.json` wiring under `integrations/claude/hooks/`.
+- The repo also now includes a source-first Claude plugin wrapper under `plugins/hookify-claude/`.
 - Codex still has the cleaner documented plugin/testing story today.
 - Claude packaging should stay thin and reuse the same runtime and skill model.

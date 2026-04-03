@@ -1,0 +1,8 @@
+{
+  "name": "hookify",
+  "description": "Hookify skills and hooks for Claude Code.",
+  "author": {
+    "name": "Jason Kuhrt",
+    "url": "https://github.com/jasonkuhrt"
+  }
+}

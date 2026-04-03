@@ -89,6 +89,10 @@ hookify/
         hookify-write-hook/
         hookify-migrate/
         hookify-doctor/
+    hookify-claude/
+      .claude-plugin/
+      hooks/
+      skills/
   integrations/
     claude/
       hooks/
@@ -100,6 +104,7 @@ Where:
 - `integration-codex` is the Codex-facing code layer that feeds native Codex events into the runtime and translates results back out.
 - `integration-claude` is the Claude-facing code layer that feeds native Claude events into the runtime and translates results back out.
 - `plugins/hookify` is the Codex-facing distribution wrapper around the runtime, the Codex integration, and the bundled Hookify skills.
+- `plugins/hookify-claude` is the source-first Claude plugin wrapper around the Claude integration and the shared Hookify skills.
 - `integrations/claude` holds the source-first Claude dispatcher and sample `hooks/hooks.json` wiring until a fuller Claude plugin wrapper is worth the extra maintenance.
 
 ## Advice on the Claude Part
@@ -118,6 +123,6 @@ That keeps the runtime, skills, docs, and repo all centered on one product name.
 
 The next implementation steps are:
 
-1. Dogfood both source-first wrappers against real project hooks.
+1. Dogfood both source-first plugin wrappers against real project hooks.
 2. Decide whether the current source-import wrappers should stay source-first for development and gain a separate publish step later.
-3. Add a first-class Claude plugin wrapper with bundled Hookify skills once the current Claude integration stops moving.
+3. Tighten the Claude plugin wrapper from “minimal but real” into a fuller distribution surface with any Claude-specific commands or docs it still needs.

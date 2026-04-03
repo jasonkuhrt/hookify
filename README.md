@@ -235,7 +235,7 @@ console.log(execution.output);
 | [`@hookify/integration-codex`](packages/integration-codex/src/index.ts)   | Codex installable integration  | End-to-end Codex execution path from native event JSON to Hookify handler output  |
 | [`@hookify/integration-claude`](packages/integration-claude/src/index.ts) | Claude installable integration | End-to-end Claude execution path from native event JSON to Hookify handler output |
 
-The repo now ships source-first executable paths for both agents: Codex through [`plugins/hookify/hooks/dispatch-codex.ts`](plugins/hookify/hooks/dispatch-codex.ts) with [`plugins/hookify/hooks.json`](plugins/hookify/hooks.json), and Claude through [`integrations/claude/hooks/dispatch-claude.ts`](integrations/claude/hooks/dispatch-claude.ts) with [`integrations/claude/hooks/hooks.json`](integrations/claude/hooks/hooks.json). The next major packaging gap is a first-class Claude plugin wrapper with bundled Hookify skills.
+The repo now ships source-first executable paths for both agents: Codex through [`plugins/hookify/hooks/dispatch-codex.ts`](plugins/hookify/hooks/dispatch-codex.ts) with [`plugins/hookify/hooks.json`](plugins/hookify/hooks.json), and Claude through [`integrations/claude/hooks/dispatch-claude.ts`](integrations/claude/hooks/dispatch-claude.ts) with [`integrations/claude/hooks/hooks.json`](integrations/claude/hooks/hooks.json). It also now includes a source-first Claude plugin wrapper at [`plugins/hookify-claude`](plugins/hookify-claude/.claude-plugin/plugin.json) that shares the Hookify skill surface.
 
 ## Glossary
 
