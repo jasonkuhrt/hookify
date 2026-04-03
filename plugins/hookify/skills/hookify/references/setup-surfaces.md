@@ -20,6 +20,7 @@ Use this file when the task is about where Hookify should live.
 ## Hookify packaging direction
 
 - The runtime is shared.
+- Generated native dispatcher files should come from `@hookify/install`, which stamps a provenance banner into the generated hook code with install surface, install method, actor, and timestamp.
 - Skills are the main user-facing entrypoint.
 - The Codex plugin wrapper in this repo already bundles both skills and plugin-level hooks.
 - The repo also ships a source-first Claude dispatcher and sample `hooks/hooks.json` wiring under `integrations/claude/hooks/`.

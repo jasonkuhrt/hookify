@@ -27,6 +27,7 @@ Hookify is a small Bun workspace. Root files define the shared toolchain, and ea
 | [`packages/schema`](packages/schema/src/index.ts)                             | Versioned [`envelope`](README.md#envelope) and result contract                                                                                      |
 | [`packages/core`](packages/core/src/index.ts)                                 | Shared primitives such as filename parsing and env projection                                                                                       |
 | [`packages/runtime`](packages/runtime/src/index.ts)                           | Neutral root resolution, handler discovery, process execution, and result aggregation                                                               |
+| [`packages/install`](packages/install/src/index.ts)                           | Generated install artifacts such as stamped dispatcher files and native hook config renderers                                                       |
 | [`packages/adapter-codex`](packages/adapter-codex/src/index.ts)               | Codex-native event typing, normalization, and response translation                                                                                  |
 | [`packages/adapter-claude`](packages/adapter-claude/src/index.ts)             | Claude-native event typing and normalization bootstrap                                                                                              |
 | [`packages/integration-codex`](packages/integration-codex/src/index.ts)       | End-to-end Codex integration that resolves runtime context and executes handlers                                                                    |
@@ -44,6 +45,8 @@ Tests live next to the code they protect as `src/*.test.ts`. If you are changing
 `@hookify/adapter-codex` and `@hookify/adapter-claude` own native payload knowledge. Adapters may depend on schema types and neutral helpers from core, but they should not depend on each other or hide policy decisions that belong in the runtime.
 
 `@hookify/runtime` owns filesystem-aware execution mechanics. Directory resolution, handler discovery, spawning, fail-open behavior, and result aggregation belong there rather than in adapters or plugin wrappers.
+
+`@hookify/install` owns generated install artifacts. If Hookify needs to write native-facing dispatcher files or hook config files, the source template and provenance banner belong there instead of being copied into skills, plugin wrappers, or user dotfiles.
 
 `@hookify/integration-codex` owns the Codex-facing install surface above the runtime. It can depend on the Codex adapter and the runtime, but it should stay thin: read native Codex events, resolve context, execute Hookify handlers, translate the result back to Codex output.
 

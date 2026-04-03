@@ -1,0 +1,295 @@
+import { chmod, mkdir, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
+
+import { type ClaudeNativeEventName } from "@hookify/adapter-claude";
+import { codexNativeEventNames, type CodexNativeEventName } from "@hookify/adapter-codex";
+import type { HookifyAgent } from "@hookify/schema";
+
+export const hookifyInstallSurfaces = [
+  "codex-plugin",
+  "codex-user-hooks-json",
+  "codex-project-hooks-json",
+  "claude-plugin",
+  "claude-user-settings-json",
+  "claude-project-settings-json",
+] as const;
+export type HookifyInstallSurface = (typeof hookifyInstallSurfaces)[number];
+
+export const hookifyDefaultClaudeInstallEventNames = [
+  "SessionStart",
+  "UserPromptSubmit",
+  "PreToolUse",
+  "PermissionRequest",
+  "PostToolUse",
+  "PostToolUseFailure",
+  "Notification",
+  "Stop",
+  "SubagentStop",
+  "PreCompact",
+  "SessionEnd",
+] as const satisfies readonly ClaudeNativeEventName[];
+
+export interface HookifyInstallProvenance {
+  installSurface: HookifyInstallSurface;
+  installedVia: string;
+  installedBy: string;
+  installedAt: string;
+}
+
+export interface ResolveHookifyInstallProvenanceOptions {
+  installSurface: HookifyInstallSurface;
+  installedVia: string;
+  installedBy?: string;
+  installedAt?: string;
+  environment?: NodeJS.ProcessEnv;
+  now?: Date;
+}
+
+export interface RenderHookifyDispatcherSourceOptions {
+  importPath: string;
+  provenance: HookifyInstallProvenance;
+}
+
+export interface WriteHookifyDispatcherSourceOptions extends RenderHookifyDispatcherSourceOptions {
+  pathname: string;
+}
+
+export interface HookifyInstalledFile {
+  pathname: string;
+  source: string;
+}
+
+export interface CodexCommandHook {
+  type: "command";
+  command: string;
+  statusMessage?: string;
+}
+
+export interface CodexHookRule {
+  matcher?: string;
+  hooks: [CodexCommandHook];
+}
+
+export interface CodexHooksConfiguration {
+  hooks: Partial<Record<CodexNativeEventName, CodexHookRule[]>>;
+}
+
+export interface CreateCodexHooksConfigurationOptions {
+  command: string;
+  events?: readonly CodexNativeEventName[];
+}
+
+export interface ClaudeCommandHook {
+  type: "command";
+  command: string;
+  timeout?: number;
+}
+
+export interface ClaudeHookRule {
+  hooks: [ClaudeCommandHook];
+}
+
+export interface ClaudeHooksConfiguration {
+  description: string;
+  hooks: Partial<Record<ClaudeNativeEventName, ClaudeHookRule[]>>;
+}
+
+export interface CreateClaudeHooksConfigurationOptions {
+  command: string;
+  description?: string;
+  events?: readonly ClaudeNativeEventName[];
+  timeoutSeconds?: number;
+}
+
+export const resolveHookifyInstallProvenance = (
+  options: ResolveHookifyInstallProvenanceOptions,
+): HookifyInstallProvenance => ({
+  installSurface: options.installSurface,
+  installedVia: options.installedVia,
+  installedBy:
+    options.installedBy ?? resolveHookifyInstallActor(options.environment ?? process.env),
+  installedAt: options.installedAt ?? (options.now ?? new Date()).toISOString(),
+});
+
+export const resolveHookifyInstallActor = (environment: NodeJS.ProcessEnv = process.env): string =>
+  firstNonEmptyValue(
+    environment.HOOKIFY_INSTALL_ACTOR,
+    environment.GITHUB_ACTOR,
+    environment.USER,
+    environment.USERNAME,
+    "unknown",
+  );
+
+export const renderCodexDispatcherSource = (
+  options: RenderHookifyDispatcherSourceOptions,
+): string =>
+  renderHookifyDispatcherSource({
+    agent: "codex",
+    importPath: options.importPath,
+    provenance: options.provenance,
+    executeFunctionName: "executeCodexHookify",
+    parseFunctionName: "parseCodexNativeEvent",
+  });
+
+export const renderClaudeDispatcherSource = (
+  options: RenderHookifyDispatcherSourceOptions,
+): string =>
+  renderHookifyDispatcherSource({
+    agent: "claude",
+    importPath: options.importPath,
+    provenance: options.provenance,
+    executeFunctionName: "executeClaudeHookify",
+    parseFunctionName: "parseClaudeNativeEvent",
+  });
+
+export const writeCodexDispatcherSource = async (
+  options: WriteHookifyDispatcherSourceOptions,
+): Promise<HookifyInstalledFile> =>
+  await writeHookifyInstalledFile(options.pathname, renderCodexDispatcherSource(options));
+
+export const writeClaudeDispatcherSource = async (
+  options: WriteHookifyDispatcherSourceOptions,
+): Promise<HookifyInstalledFile> =>
+  await writeHookifyInstalledFile(options.pathname, renderClaudeDispatcherSource(options));
+
+export const createCodexHooksConfiguration = (
+  options: CreateCodexHooksConfigurationOptions,
+): CodexHooksConfiguration => ({
+  hooks: Object.fromEntries(
+    (options.events ?? codexNativeEventNames).map((eventName) => [
+      eventName,
+      [createCodexHookRule(eventName, options.command)],
+    ]),
+  ) as CodexHooksConfiguration["hooks"],
+});
+
+export const renderCodexHooksJson = (options: CreateCodexHooksConfigurationOptions): string =>
+  `${JSON.stringify(createCodexHooksConfiguration(options), null, 2)}\n`;
+
+export const createClaudeHooksConfiguration = (
+  options: CreateClaudeHooksConfigurationOptions,
+): ClaudeHooksConfiguration => ({
+  description: options.description ?? "Hookify Claude install",
+  hooks: Object.fromEntries(
+    (options.events ?? hookifyDefaultClaudeInstallEventNames).map((eventName) => [
+      eventName,
+      [
+        {
+          hooks: [
+            {
+              type: "command",
+              command: options.command,
+              ...(options.timeoutSeconds !== undefined ? { timeout: options.timeoutSeconds } : {}),
+            },
+          ],
+        },
+      ],
+    ]),
+  ) as ClaudeHooksConfiguration["hooks"],
+});
+
+export const renderClaudeHooksJson = (options: CreateClaudeHooksConfigurationOptions): string =>
+  `${JSON.stringify(createClaudeHooksConfiguration(options), null, 2)}\n`;
+
+const renderHookifyDispatcherSource = (options: {
+  agent: HookifyAgent;
+  importPath: string;
+  provenance: HookifyInstallProvenance;
+  executeFunctionName: string;
+  parseFunctionName: string;
+}): string =>
+  [
+    "#!/usr/bin/env bun",
+    "",
+    renderGeneratedHookifyBanner(options.agent, options.provenance),
+    "",
+    "import {",
+    `  ${options.executeFunctionName},`,
+    `  ${options.parseFunctionName},`,
+    `} from ${JSON.stringify(options.importPath)};`,
+    "",
+    "const readStandardInput = async (): Promise<string> =>",
+    "  await new Response(Bun.stdin.stream()).text();",
+    "",
+    "const main = async (): Promise<void> => {",
+    "  const input = (await readStandardInput()).trim();",
+    "",
+    '  if (input === "") {',
+    "    return;",
+    "  }",
+    "",
+    "  const execution = await " +
+      `${options.executeFunctionName}({ native: ${options.parseFunctionName}(input) });`,
+    "",
+    "  if (Object.keys(execution.output).length > 0) {",
+    "    process.stdout.write(`${JSON.stringify(execution.output)}\\n`);",
+    "  }",
+    "};",
+    "",
+    "try {",
+    "  await main();",
+    "} catch (error) {",
+    "  const message = error instanceof Error ? (error.stack ?? error.message) : String(error);",
+    "",
+    `  process.stderr.write(${JSON.stringify(`hookify ${options.agent} dispatcher failed open: `)} + message + "\\n");`,
+    "}",
+    "",
+  ].join("\n");
+
+const renderGeneratedHookifyBanner = (
+  agent: HookifyAgent,
+  provenance: HookifyInstallProvenance,
+): string =>
+  [
+    "// Generated by Hookify install.",
+    `// Agent: ${agent}`,
+    `// Install surface: ${provenance.installSurface}`,
+    `// Installed via: ${provenance.installedVia}`,
+    `// Installed by: ${provenance.installedBy}`,
+    `// Installed at: ${provenance.installedAt}`,
+    "// This file is managed by Hookify. Re-run Hookify install to regenerate it.",
+  ].join("\n");
+
+const writeHookifyInstalledFile = async (
+  pathname: string,
+  source: string,
+): Promise<HookifyInstalledFile> => {
+  await mkdir(dirname(pathname), { recursive: true });
+  await writeFile(pathname, source, "utf8");
+  await chmod(pathname, 0o755);
+
+  return {
+    pathname,
+    source,
+  };
+};
+
+const createCodexHookRule = (eventName: CodexNativeEventName, command: string): CodexHookRule => {
+  const hook = {
+    type: "command" as const,
+    command,
+  };
+
+  switch (eventName) {
+    case "PreToolUse":
+    case "PostToolUse":
+      return {
+        matcher: "Bash",
+        hooks: [hook],
+      };
+    default:
+      return {
+        hooks: [hook],
+      };
+  }
+};
+
+const firstNonEmptyValue = (...values: Array<string | undefined>): string => {
+  for (const value of values) {
+    if (value && value.trim() !== "") {
+      return value;
+    }
+  }
+
+  return "";
+};

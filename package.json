@@ -16,6 +16,7 @@
   "type": "module",
   "scripts": {
     "install:ci": "bun install --frozen-lockfile",
+    "install:codex": "bun run ./scripts/install-codex.ts",
     "format": "oxfmt --write .",
     "check:format": "oxfmt --check .",
     "lint": "oxlint --deny-warnings .",

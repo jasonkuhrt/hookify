@@ -70,6 +70,7 @@ If the user wants adoption or changes:
 
 - preserve existing intent
 - choose the minimal placement that matches the requested scope
+- generate native dispatcher files through `@hookify/install` rather than hand-writing local glue
 - keep shared behavior explicit with `.all`
 - keep agent-specific behavior explicit with `.claude` or `.codex`
 

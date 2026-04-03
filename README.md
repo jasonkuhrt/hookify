@@ -4,6 +4,16 @@
 
 Hookify standardizes hook discovery and execution for Claude and Codex without discarding either agent's native JSON.
 
+## Install Codex
+
+One command:
+
+```sh
+bash <(curl -fsSL https://raw.githubusercontent.com/jasonkuhrt/hookify/main/scripts/install-codex.sh)
+```
+
+That installs the native Codex bridge once. After that, you edit `.hookify/` files, not Codex hook config.
+
 ## Grounding
 
 Coding agents can run hooks around prompt submission, tool calls, and session lifecycle events. Claude and Codex expose different event names, different payload shapes, and different output contracts for those same moments.
@@ -230,12 +240,15 @@ console.log(execution.output);
 | [`@hookify/schema`](packages/schema/src/index.ts)                         | Versioned data contract        | Agents, events, scopes, tool kinds, envelope shape, result shape                  |
 | [`@hookify/core`](packages/core/src/index.ts)                             | Shared primitives              | Filename parsing, applicability checks, environment projection                    |
 | [`@hookify/runtime`](packages/runtime/src/index.ts)                       | Neutral execution engine       | Root resolution, handler discovery, process execution, result aggregation         |
+| [`@hookify/install`](packages/install/src/index.ts)                       | Install artifact generator     | Generated dispatcher sources, native hook config JSON, provenance banner stamping |
 | [`@hookify/adapter-codex`](packages/adapter-codex/src/index.ts)           | Codex protocol boundary        | Codex event-name mapping, envelope construction, result translation               |
 | [`@hookify/adapter-claude`](packages/adapter-claude/src/index.ts)         | Claude protocol boundary       | Claude event-name mapping and normalized bootstrap for shared fields              |
 | [`@hookify/integration-codex`](packages/integration-codex/src/index.ts)   | Codex installable integration  | End-to-end Codex execution path from native event JSON to Hookify handler output  |
 | [`@hookify/integration-claude`](packages/integration-claude/src/index.ts) | Claude installable integration | End-to-end Claude execution path from native event JSON to Hookify handler output |
 
 The repo now ships source-first executable paths for both agents: Codex through [`plugins/hookify/hooks/dispatch-codex.ts`](plugins/hookify/hooks/dispatch-codex.ts) with [`plugins/hookify/hooks.json`](plugins/hookify/hooks.json), and Claude through [`integrations/claude/hooks/dispatch-claude.ts`](integrations/claude/hooks/dispatch-claude.ts) with [`integrations/claude/hooks/hooks.json`](integrations/claude/hooks/hooks.json). It also now includes a source-first Claude plugin wrapper at [`plugins/hookify-claude`](plugins/hookify-claude/.claude-plugin/plugin.json) that shares the Hookify skill surface.
+
+Generated install dispatchers should come from [`@hookify/install`](packages/install/src/index.ts), not from hand-written local glue. The generated dispatcher source carries a provenance banner that records the native install surface, install method, actor, and timestamp.
 
 ## Glossary
 

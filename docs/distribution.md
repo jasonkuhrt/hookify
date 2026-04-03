@@ -77,6 +77,7 @@ hookify/
     adapter-claude/
     adapter-codex/
     runtime/
+    install/
     integration-codex/
     integration-claude/
   plugins/
@@ -101,6 +102,7 @@ hookify/
 Where:
 
 - `runtime` owns root resolution, discovery, execution, process spawning, and result aggregation.
+- `install` owns generated native install artifacts such as dispatcher source files and native hook config JSON, including provenance banners in generated hook code.
 - `integration-codex` is the Codex-facing code layer that feeds native Codex events into the runtime and translates results back out.
 - `integration-claude` is the Claude-facing code layer that feeds native Claude events into the runtime and translates results back out.
 - `plugins/hookify` is the Codex-facing distribution wrapper around the runtime, the Codex integration, and the bundled Hookify skills.

@@ -1,0 +1,14 @@
+{
+  "name": "@hookify/install",
+  "version": "0.0.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@hookify/adapter-claude": "workspace:*",
+    "@hookify/adapter-codex": "workspace:*",
+    "@hookify/schema": "workspace:*"
+  }
+}
