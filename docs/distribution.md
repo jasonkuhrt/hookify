@@ -51,7 +51,7 @@ Verified from the official Codex docs:
 - `.codex-plugin/plugin.json` is the required manifest entry point.
 - Self-serve public plugin publishing is not available yet; official docs say it is coming soon.
 
-One useful nuance from local shipped plugins: current plugin examples and plugin specs also include plugin-level hooks, even though the public build page emphasizes skills, apps, and MCP first. Hookify should take advantage of that when the runtime package exists, but the skill layer should remain the human-facing entrypoint.
+One useful nuance from local shipped plugins: current plugin examples and plugin specs also include plugin-level hooks, even though the public build page emphasizes skills, apps, and MCP first. Hookify now takes advantage of that in the source-first Codex plugin wrapper, while keeping the skill layer as the human-facing entrypoint.
 
 ### 3. Claude plugin or marketplace wrapper as the paired channel
 
@@ -77,9 +77,12 @@ hookify/
     adapter-claude/
     adapter-codex/
     runtime/
+    integration-codex/
   plugins/
     hookify/
       .codex-plugin/
+      hooks.json
+      hooks/
       skills/
         hookify/
         hookify-write-hook/
@@ -91,8 +94,9 @@ hookify/
 
 Where:
 
-- `runtime` owns discovery, execution, process spawning, and translation between handlers and agent adapters.
-- `plugins/hookify` is the Codex-facing wrapper around the runtime and bundled Hookify skills.
+- `runtime` owns root resolution, discovery, execution, process spawning, and result aggregation.
+- `integration-codex` is the Codex-facing code layer that feeds native Codex events into the runtime and translates results back out.
+- `plugins/hookify` is the Codex-facing distribution wrapper around the runtime, the Codex integration, and the bundled Hookify skills.
 - `integrations/claude` holds the Claude-facing wrapper and any marketplace-specific packaging glue if that channel is worth the extra maintenance.
 
 ## Advice on the Claude Part
@@ -111,7 +115,6 @@ That keeps the runtime, skills, docs, and repo all centered on one product name.
 
 The next implementation steps are:
 
-1. Add `packages/runtime` so Hookify can actually discover and execute `.all`, `.claude`, and `.codex` hooks.
-2. Make the Codex plugin wrapper real and bundle the first Hookify skills.
-3. Dogfood a local Codex plugin wrapper using a personal marketplace.
-4. Add a Claude wrapper only after the runtime and skills are stable enough that the wrapper stays thin.
+1. Dogfood the source-first Codex plugin wrapper using a personal marketplace and real project hooks.
+2. Decide whether the Codex plugin should keep importing workspace source directly or grow a small publish step later.
+3. Add the paired Claude integration and wrapper only after the runtime and Codex path are stable enough that the wrapper stays thin.

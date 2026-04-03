@@ -1,0 +1,13 @@
+{
+  "name": "@hookify/runtime",
+  "version": "0.0.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@hookify/core": "workspace:*",
+    "@hookify/schema": "workspace:*"
+  }
+}

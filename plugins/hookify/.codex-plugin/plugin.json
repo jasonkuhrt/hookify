@@ -11,6 +11,7 @@
   "license": "MIT",
   "keywords": ["hooks", "claude", "codex", "agents"],
   "skills": "./skills/",
+  "hooks": "./hooks.json",
   "interface": {
     "displayName": "Hookify",
     "shortDescription": "Learn and manage Hookify hook setups",

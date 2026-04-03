@@ -73,8 +73,6 @@ If the user wants adoption or changes:
 - keep shared behavior explicit with `.all`
 - keep agent-specific behavior explicit with `.claude` or `.codex`
 
-If the runtime package is not present yet, say so clearly and still make the highest-value structural changes that are possible.
-
 ## Companion skills
 
 - Use [hookify-write-hook](../hookify-write-hook/SKILL.md) when the main task is authoring or updating a Hookify hook file.

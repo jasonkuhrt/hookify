@@ -29,7 +29,7 @@ bun install
 bun run check
 ```
 
-`bun run check` runs formatting, lint, and tests for the whole workspace. Once it passes, start in the package that owns your change: `packages/schema` for the contract, `packages/core` for neutral mechanics, and `packages/adapter-*` for agent boundaries. Contributor workflow lives in [CONTRIBUTING.md](CONTRIBUTING.md).
+`bun run check` runs formatting, lint, and tests for the whole workspace. Once it passes, start in the package that owns your change: `packages/schema` for the contract, `packages/core` for shared primitives, `packages/runtime` for execution mechanics, and `packages/integration-*` for installable agent glue. Contributor workflow lives in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Concepts
 
@@ -113,6 +113,23 @@ console.log(environment.HOOKIFY_AGENT);
 // "codex"
 ```
 
+When you need Hookify to resolve its live execution roots, ask the runtime for the current context. It resolves the real working directory, finds the git root when present, preserves user scope, and layers any discovered project `.hookify/` directories from outermost to innermost.
+
+```ts
+import { resolveHookifyRuntimeContext } from "@hookify/runtime";
+
+const context = await resolveHookifyRuntimeContext({
+  cwd: "/repo/packages/app",
+});
+
+console.log(context.roots);
+// [
+//   { scope: "user", rootPath: "/Users/you" },
+//   { scope: "project", rootPath: "/repo" },
+//   { scope: "project", rootPath: "/repo/packages/app" }
+// ]
+```
+
 When you need to turn raw Codex JSON into Hookify data, use the Codex adapter and keep the raw payload intact inside the returned [`envelope`](#envelope).
 
 ```ts
@@ -176,16 +193,30 @@ console.log(output);
 // { decision: "block", reason: "cmux is forbidden" }
 ```
 
+When you want the whole Codex path in one call, use the Codex integration. It resolves execution roots, builds the Hookify envelope, executes matching handlers, and translates the result back into Codex-native output.
+
+```ts
+import { executeCodexHookify } from "@hookify/integration-codex";
+
+const execution = await executeCodexHookify({
+  native: codexNativeEvent,
+});
+
+console.log(execution.output);
+```
+
 ## Package Index
 
-| Package                                                           | Role                                | Current surface                                                              |
-| ----------------------------------------------------------------- | ----------------------------------- | ---------------------------------------------------------------------------- |
-| [`@hookify/schema`](packages/schema/src/index.ts)                 | Versioned contract for Hookify data | Agents, events, scopes, tool kinds, envelope shape, result shape             |
-| [`@hookify/core`](packages/core/src/index.ts)                     | Neutral runtime helpers             | Filename parsing, applicability checks, environment projection               |
-| [`@hookify/adapter-codex`](packages/adapter-codex/src/index.ts)   | Codex boundary                      | Verified Codex event-name mapping, envelope construction, result translation |
-| [`@hookify/adapter-claude`](packages/adapter-claude/src/index.ts) | Claude boundary                     | Claude event-name mapping and normalized bootstrap for shared fields         |
+| Package                                                                 | Role                          | Current surface                                                                  |
+| ----------------------------------------------------------------------- | ----------------------------- | -------------------------------------------------------------------------------- |
+| [`@hookify/schema`](packages/schema/src/index.ts)                       | Versioned data contract       | Agents, events, scopes, tool kinds, envelope shape, result shape                 |
+| [`@hookify/core`](packages/core/src/index.ts)                           | Shared primitives             | Filename parsing, applicability checks, environment projection                   |
+| [`@hookify/runtime`](packages/runtime/src/index.ts)                     | Neutral execution engine      | Root resolution, handler discovery, process execution, result aggregation        |
+| [`@hookify/adapter-codex`](packages/adapter-codex/src/index.ts)         | Codex protocol boundary       | Codex event-name mapping, envelope construction, result translation              |
+| [`@hookify/adapter-claude`](packages/adapter-claude/src/index.ts)       | Claude protocol boundary      | Claude event-name mapping and normalized bootstrap for shared fields             |
+| [`@hookify/integration-codex`](packages/integration-codex/src/index.ts) | Codex installable integration | End-to-end Codex execution path from native event JSON to Hookify handler output |
 
-This repo does not ship an executable dispatcher yet. The current milestone is nailing the contract, core mechanics, adapter boundaries, and the first skills-first plugin wrapper before the runtime package lands.
+The repo now ships a source-first executable Codex path through [`plugins/hookify/hooks/dispatch-codex.ts`](plugins/hookify/hooks/dispatch-codex.ts) and the plugin-level hook wiring in [`plugins/hookify/hooks.json`](plugins/hookify/hooks.json). The next major gap is the paired Claude integration layer.
 
 ## Glossary
 
