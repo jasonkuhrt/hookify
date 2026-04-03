@@ -85,7 +85,7 @@ An **adapter** is the only place agent quirks belong. An [`adapter`](#adapter) m
 
 The examples below assume a workspace checkout while the packages are still source-first and unpublished.
 
-For the verified cross-agent event matrix, payload mapping, and output rules, see [docs/hook-authoring.md](docs/hook-authoring.md). For packaging and installer strategy, see [docs/distribution.md](docs/distribution.md).
+For the verified cross-agent event matrix, payload mapping, and output rules, see [docs/hook-authoring.md](docs/hook-authoring.md). For the current skills-first packaging strategy, see [docs/distribution.md](docs/distribution.md).
 
 When you need to decide whether a hook file should run for an agent, parse the filename once and keep the decision in data instead of string-matching ad hoc.
 
@@ -185,7 +185,7 @@ console.log(output);
 | [`@hookify/adapter-codex`](packages/adapter-codex/src/index.ts)   | Codex boundary                      | Verified Codex event-name mapping, envelope construction, result translation |
 | [`@hookify/adapter-claude`](packages/adapter-claude/src/index.ts) | Claude boundary                     | Claude event-name mapping and normalized bootstrap for shared fields         |
 
-This repo does not ship an executable dispatcher yet. The current milestone is nailing the contract, core mechanics, and adapter boundaries before the runtime package lands.
+This repo does not ship an executable dispatcher yet. The current milestone is nailing the contract, core mechanics, adapter boundaries, and the first skills-first plugin wrapper before the runtime package lands.
 
 ## Glossary
 

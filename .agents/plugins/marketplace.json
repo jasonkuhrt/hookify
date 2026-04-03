@@ -1,0 +1,20 @@
+{
+  "name": "hookify-local",
+  "interface": {
+    "displayName": "Hookify local"
+  },
+  "plugins": [
+    {
+      "name": "hookify",
+      "source": {
+        "source": "local",
+        "path": "./plugins/hookify"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

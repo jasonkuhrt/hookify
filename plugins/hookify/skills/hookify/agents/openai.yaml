@@ -1,0 +1,7 @@
+interface:
+  display_name: "Hookify"
+  short_description: "Inspect and explain Hookify setups"
+  default_prompt: "Use $hookify to inspect my current Claude and Codex hook setup and explain what Hookify should manage."
+
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,29 @@
+{
+  "name": "hookify",
+  "version": "0.1.0",
+  "description": "Hookify skills for learning, inspecting, and authoring cross-agent hook setups.",
+  "author": {
+    "name": "Jason Kuhrt",
+    "url": "https://github.com/jasonkuhrt"
+  },
+  "homepage": "https://github.com/jasonkuhrt/hookify",
+  "repository": "https://github.com/jasonkuhrt/hookify",
+  "license": "MIT",
+  "keywords": ["hooks", "claude", "codex", "agents"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Hookify",
+    "shortDescription": "Learn and manage Hookify hook setups",
+    "longDescription": "Hookify bundles skills for understanding cross-agent hook behavior, inspecting current Claude and Codex hook surfaces, and authoring Hookify-friendly hook files.",
+    "developerName": "Jason Kuhrt",
+    "category": "Coding",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "websiteURL": "https://github.com/jasonkuhrt/hookify",
+    "defaultPrompt": [
+      "Use Hookify to inspect my current Claude and Codex hook setup.",
+      "Use Hookify to explain which hook event should block a Bash command.",
+      "Use Hookify to add a project-level hook that blocks cmux."
+    ],
+    "brandColor": "#0F766E"
+  }
+}

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Hookify Write Hook"
+  short_description: "Create or update Hookify hook files"
+  default_prompt: "Use $hookify-write-hook to add a Hookify rule at the right scope and event."
+
+policy:
+  allow_implicit_invocation: true

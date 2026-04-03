@@ -1,0 +1,7 @@
+interface:
+  display_name: "Hookify Migrate"
+  short_description: "Migrate existing hooks into Hookify"
+  default_prompt: "Use $hookify-migrate to translate my current Claude and Codex hook setup into Hookify conventions."
+
+policy:
+  allow_implicit_invocation: true

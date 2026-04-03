@@ -1,0 +1,7 @@
+interface:
+  display_name: "Hookify Doctor"
+  short_description: "Diagnose Hookify setup problems"
+  default_prompt: "Use $hookify-doctor to find out why my Hookify rule is not loading or firing."
+
+policy:
+  allow_implicit_invocation: true
