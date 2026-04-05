@@ -1,7 +1,7 @@
 {
-  "name": "hookify-local",
+  "name": "hookify",
   "interface": {
-    "displayName": "Hookify local"
+    "displayName": "Hookify"
   },
   "plugins": [
     {

@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun ./hooks/dispatch-codex.ts"
+            "command": "node ./hooks/dispatch-codex.mjs"
           }
         ]
       }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun ./hooks/dispatch-codex.ts"
+            "command": "node ./hooks/dispatch-codex.mjs"
           }
         ]
       }
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun ./hooks/dispatch-codex.ts"
+            "command": "node ./hooks/dispatch-codex.mjs"
           }
         ]
       }
@@ -37,7 +37,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun ./hooks/dispatch-codex.ts"
+            "command": "node ./hooks/dispatch-codex.mjs"
           }
         ]
       }
@@ -47,7 +47,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bun ./hooks/dispatch-codex.ts"
+            "command": "node ./hooks/dispatch-codex.mjs"
           }
         ]
       }
