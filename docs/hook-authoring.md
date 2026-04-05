@@ -106,6 +106,58 @@ Field meaning:
 
 If a Hookify handler prints plain text instead of JSON, the runtime currently treats that as a fail-open `systemMessage` convenience rather than native-agent plain-text semantics.
 
+## Declarative Markdown Handlers
+
+Hook files ending in `.md` are declarative: the runtime reads the file instead of spawning it. Markdown handlers carry a static `HookifyResult` and are ideal for reminders, static context, and simple block rules. They cannot see the envelope or run logic — reach for a `.ts`/`.sh` handler when you need either.
+
+The file layout matches every other handler: `<root>/.hookify/<event>/[<priority>-]<name>.<applicability>.md`. Event, applicability, and name come from the path; frontmatter only carries output shape.
+
+```markdown
+---
+# All optional — these are the defaults
+# enabled: true
+# decision: (unset — allow by default; set to "block" to deny)
+# emit: systemMessage            (or "reason" when decision=block)
+# reason: "..."                  (explicit reason; body fills this when decision=block)
+# systemMessage: "..."           (explicit; wins over body)
+# additionalContext: "..."       (explicit; wins over body)
+---
+
+Body content. Routed to the field named by `emit` when that field is not set explicitly in frontmatter.
+```
+
+Rules:
+
+- `enabled: false` short-circuits the handler with an empty result (status: `allowed`).
+- Body (when non-empty) is routed to the field named by `emit`. The default is `systemMessage`, or `reason` when `decision: block`.
+- Frontmatter-explicit `systemMessage`, `additionalContext`, and `reason` override the body for that field.
+- `decision: block` requires a reason (explicit frontmatter or non-empty body). Missing reason is an `invalid-output` diagnostic.
+- `reason` is only valid when `decision: block`.
+- Frontmatter is a flat `key: value` YAML subset. No nested structures, lists, or multi-line strings — use a `.ts` handler if you need them.
+
+Examples:
+
+```markdown
+Remember to persist noted issues before stopping.
+```
+
+```markdown
+---
+decision: block
+---
+
+cmux is forbidden in this worktree.
+```
+
+```markdown
+---
+emit: additionalContext
+systemMessage: "heads up"
+---
+
+Follow the repo policy before acting on this prompt.
+```
+
 ## Output and Control Matrix
 
 | Goal                                  | Claude                                                                                       | Codex                                                                                                                      | Notes                                                                                   |

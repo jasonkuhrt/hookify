@@ -291,3 +291,138 @@ test("aggregate Hookify results preserves additional context alongside warnings 
     await rm(workspacePath, { recursive: true, force: true });
   }
 });
+
+test("executeHookifyHandlers runs declarative markdown handlers as systemMessage by default", async () => {
+  const workspacePath = await mkdtemp(join(tmpdir(), "hookify-runtime-"));
+
+  try {
+    const projectRootPath = join(workspacePath, "project");
+
+    await mkdir(join(projectRootPath, ".hookify", "stop"), { recursive: true });
+
+    await Bun.write(
+      join(projectRootPath, ".hookify", "stop", "10-reminder.all.md"),
+      "Remember to persist noted issues before stopping.\n",
+    );
+
+    const report = await executeHookifyHandlers({
+      envelope: {
+        ...createEnvelope(projectRootPath),
+        event: "stop",
+        normalized: {},
+        native: { hook_event_name: "Stop" },
+      },
+      roots: [{ scope: "project", rootPath: projectRootPath }],
+    });
+
+    expect(report.handlers.map((handler) => handler.status)).toEqual(["allowed"]);
+    expect(report.aggregatedResult).toEqual({
+      systemMessage: "Remember to persist noted issues before stopping.",
+    });
+  } finally {
+    await rm(workspacePath, { recursive: true, force: true });
+  }
+});
+
+test("executeHookifyHandlers runs markdown block handlers with body as reason", async () => {
+  const workspacePath = await mkdtemp(join(tmpdir(), "hookify-runtime-"));
+
+  try {
+    const projectRootPath = join(workspacePath, "project");
+
+    await mkdir(join(projectRootPath, ".hookify", "pre-tool-use"), { recursive: true });
+
+    await Bun.write(
+      join(projectRootPath, ".hookify", "pre-tool-use", "10-block.all.md"),
+      ["---", "decision: block", "---", "cmux is forbidden here."].join("\n"),
+    );
+
+    const report = await executeHookifyHandlers({
+      envelope: createEnvelope(projectRootPath),
+      roots: [{ scope: "project", rootPath: projectRootPath }],
+    });
+
+    expect(report.handlers.map((handler) => handler.status)).toEqual(["blocked"]);
+    expect(report.aggregatedResult).toEqual({
+      decision: "block",
+      reason: "cmux is forbidden here.",
+    });
+  } finally {
+    await rm(workspacePath, { recursive: true, force: true });
+  }
+});
+
+test("executeHookifyHandlers respects explicit markdown fields and emit target", async () => {
+  const workspacePath = await mkdtemp(join(tmpdir(), "hookify-runtime-"));
+
+  try {
+    const projectRootPath = join(workspacePath, "project");
+
+    await mkdir(join(projectRootPath, ".hookify", "user-prompt-submit"), { recursive: true });
+
+    await Bun.write(
+      join(projectRootPath, ".hookify", "user-prompt-submit", "10-context.all.md"),
+      [
+        "---",
+        "emit: additionalContext",
+        'systemMessage: "heads up"',
+        "---",
+        "Follow the repo policy.",
+      ].join("\n"),
+    );
+
+    const report = await executeHookifyHandlers({
+      envelope: {
+        ...createEnvelope(projectRootPath),
+        event: "user-prompt-submit",
+        normalized: { prompt: { text: "go" } },
+        native: { hook_event_name: "UserPromptSubmit", prompt: "go" },
+      },
+      roots: [{ scope: "project", rootPath: projectRootPath }],
+    });
+
+    expect(report.aggregatedResult).toEqual({
+      additionalContext: "Follow the repo policy.",
+      systemMessage: "heads up",
+    });
+  } finally {
+    await rm(workspacePath, { recursive: true, force: true });
+  }
+});
+
+test("executeHookifyHandlers skips disabled markdown handlers and reports invalid frontmatter", async () => {
+  const workspacePath = await mkdtemp(join(tmpdir(), "hookify-runtime-"));
+
+  try {
+    const projectRootPath = join(workspacePath, "project");
+
+    await mkdir(join(projectRootPath, ".hookify", "stop"), { recursive: true });
+
+    await Bun.write(
+      join(projectRootPath, ".hookify", "stop", "10-off.all.md"),
+      ["---", "enabled: false", "---", "unused body"].join("\n"),
+    );
+    await Bun.write(
+      join(projectRootPath, ".hookify", "stop", "20-bad.all.md"),
+      ["---", "decision: block", "---"].join("\n"),
+    );
+
+    const report = await executeHookifyHandlers({
+      envelope: {
+        ...createEnvelope(projectRootPath),
+        event: "stop",
+        normalized: {},
+        native: { hook_event_name: "Stop" },
+      },
+      roots: [{ scope: "project", rootPath: projectRootPath }],
+    });
+
+    expect(report.handlers.map((handler) => handler.status)).toEqual(["allowed", "invalid-output"]);
+    expect(report.handlers[1]?.diagnostics).toBe(
+      "Markdown handler with decision=block requires a reason or a non-empty body.",
+    );
+    expect(report.aggregatedResult).toEqual({});
+  } finally {
+    await rm(workspacePath, { recursive: true, force: true });
+  }
+});

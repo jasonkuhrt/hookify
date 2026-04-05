@@ -1,6 +1,11 @@
 import { expect, test } from "bun:test";
 
-import { isEligibleApplicability, parseHookFileName, toHookEnvironment } from "./index";
+import {
+  isEligibleApplicability,
+  parseHookFileName,
+  parseMarkdownHandler,
+  toHookEnvironment,
+} from "./index";
 
 test("parseHookFileName recognizes ordered shared hooks", () => {
   expect(parseHookFileName("/tmp/10-block-cmux.all.ts")).toEqual({
@@ -11,8 +16,71 @@ test("parseHookFileName recognizes ordered shared hooks", () => {
   });
 });
 
+test("parseHookFileName recognizes markdown handlers", () => {
+  expect(parseHookFileName("/tmp/persist-noted-issues.all.md")).toEqual({
+    name: "persist-noted-issues",
+    applicability: "all",
+    runtime: "md",
+  });
+});
+
 test("parseHookFileName rejects unsupported names", () => {
   expect(parseHookFileName("/tmp/pre-tool-use.ts")).toBeNull();
+});
+
+test("parseMarkdownHandler extracts frontmatter and body", () => {
+  const content = [
+    "---",
+    "decision: block",
+    'reason: "cmux is forbidden"',
+    "enabled: true",
+    "---",
+    "",
+    "Long-form explanation.",
+    "Second paragraph.",
+  ].join("\n");
+
+  expect(parseMarkdownHandler(content)).toEqual({
+    frontmatter: {
+      decision: "block",
+      reason: "cmux is forbidden",
+      enabled: true,
+    },
+    body: "Long-form explanation.\nSecond paragraph.",
+  });
+});
+
+test("parseMarkdownHandler treats files without frontmatter as body-only", () => {
+  expect(parseMarkdownHandler("Just a reminder.\n")).toEqual({
+    frontmatter: {},
+    body: "Just a reminder.",
+  });
+});
+
+test("parseMarkdownHandler ignores comments and blanks in frontmatter", () => {
+  const content = [
+    "---",
+    "# a comment",
+    "emit: additionalContext  # inline comment",
+    "",
+    "enabled: false",
+    "---",
+    "body text",
+  ].join("\n");
+
+  expect(parseMarkdownHandler(content)).toEqual({
+    frontmatter: { emit: "additionalContext", enabled: false },
+    body: "body text",
+  });
+});
+
+test("parseMarkdownHandler handles unterminated frontmatter as body-only", () => {
+  const content = ["---", "decision: block", "body without close"].join("\n");
+
+  expect(parseMarkdownHandler(content)).toEqual({
+    frontmatter: {},
+    body: "---\ndecision: block\nbody without close",
+  });
 });
 
 test("isEligibleApplicability matches shared and agent-specific hooks", () => {

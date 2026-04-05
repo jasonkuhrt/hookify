@@ -3,7 +3,12 @@ import { mkdtemp, readdir, readFile, realpath, rm, stat, writeFile } from "node:
 import { dirname, join } from "node:path";
 import { homedir, tmpdir } from "node:os";
 
-import { parseHookFileName, toHookEnvironment, type ParsedHookFileName } from "@hookify/core";
+import {
+  parseHookFileName,
+  parseMarkdownHandler,
+  toHookEnvironment,
+  type ParsedHookFileName,
+} from "@hookify/core";
 import {
   HOOKIFY_ENVELOPE_VERSION,
   type HookifyEnvelope,
@@ -223,6 +228,10 @@ const executeHookifyHandler = async <Native>(
   handler: HookifyDiscoveredHandler<Native>,
   timeoutMs: number,
 ): Promise<HookifyExecutedHandler<Native>> => {
+  if (handler.runtime === "md") {
+    return executeMarkdownHandler(handler);
+  }
+
   const temporaryDirectoryPath = await mkdtemp(join(tmpdir(), "hookify-"));
 
   try {
@@ -320,6 +329,163 @@ const spawnHookifyProcess = async (
     clearTimeout(timeout);
   }
 };
+
+const MARKDOWN_EMIT_FIELDS = ["systemMessage", "additionalContext", "reason"] as const;
+type MarkdownEmitField = (typeof MARKDOWN_EMIT_FIELDS)[number];
+
+const executeMarkdownHandler = async <Native>(
+  handler: HookifyDiscoveredHandler<Native>,
+): Promise<HookifyExecutedHandler<Native>> => {
+  let content: string;
+
+  try {
+    content = await readFile(handler.realpath, "utf8");
+  } catch (error) {
+    return {
+      handler,
+      exitCode: null,
+      status: "failed",
+      stdout: "",
+      stderr: "",
+      diagnostics: `Failed to read markdown handler: ${(error as Error).message}`,
+      result: {},
+    };
+  }
+
+  const parsed = parseMarkdownHandler(content);
+  const built = buildMarkdownResult(parsed);
+
+  if (!built.ok) {
+    return {
+      handler,
+      exitCode: null,
+      status: "invalid-output",
+      stdout: "",
+      stderr: "",
+      diagnostics: built.reason,
+      result: {},
+    };
+  }
+
+  return {
+    handler,
+    exitCode: null,
+    status: built.status,
+    stdout: "",
+    stderr: "",
+    result: built.result,
+  };
+};
+
+const buildMarkdownResult = (parsed: {
+  frontmatter: Record<string, string | boolean>;
+  body: string;
+}):
+  | { ok: true; status: HookifyHandlerStatus; result: HookifyResult }
+  | { ok: false; reason: string } => {
+  const { frontmatter, body } = parsed;
+  const enabled = frontmatter.enabled !== false;
+
+  if (!enabled) {
+    return { ok: true, status: "allowed", result: {} };
+  }
+
+  const decision = frontmatter.decision;
+
+  if (decision !== undefined && decision !== "block" && decision !== "allow") {
+    return {
+      ok: false,
+      reason: `Markdown handler has invalid decision: ${JSON.stringify(decision)}.`,
+    };
+  }
+
+  const emit = frontmatter.emit;
+  const defaultEmit: MarkdownEmitField = decision === "block" ? "reason" : "systemMessage";
+
+  if (emit !== undefined && !isMarkdownEmitField(emit)) {
+    return {
+      ok: false,
+      reason: `Markdown handler has invalid emit target: ${JSON.stringify(emit)}.`,
+    };
+  }
+
+  const emitField = (emit as MarkdownEmitField | undefined) ?? defaultEmit;
+
+  const systemMessage = resolveMarkdownField(
+    frontmatter.systemMessage,
+    "systemMessage",
+    emitField,
+    body,
+  );
+  const additionalContext = resolveMarkdownField(
+    frontmatter.additionalContext,
+    "additionalContext",
+    emitField,
+    body,
+  );
+  const reason = resolveMarkdownField(frontmatter.reason, "reason", emitField, body);
+
+  if (decision === "block") {
+    if (reason === undefined) {
+      return {
+        ok: false,
+        reason: "Markdown handler with decision=block requires a reason or a non-empty body.",
+      };
+    }
+
+    return {
+      ok: true,
+      status: "blocked",
+      result: {
+        decision: "block",
+        reason,
+        ...(additionalContext !== undefined ? { additionalContext } : {}),
+        ...(systemMessage !== undefined ? { systemMessage } : {}),
+      },
+    };
+  }
+
+  if (reason !== undefined) {
+    return {
+      ok: false,
+      reason: "Markdown handler may only set reason when decision=block.",
+    };
+  }
+
+  return {
+    ok: true,
+    status: "allowed",
+    result: {
+      ...(decision === "allow" ? { decision: "allow" as const } : {}),
+      ...(additionalContext !== undefined ? { additionalContext } : {}),
+      ...(systemMessage !== undefined ? { systemMessage } : {}),
+    },
+  };
+};
+
+const resolveMarkdownField = (
+  explicit: string | boolean | undefined,
+  field: MarkdownEmitField,
+  emitField: MarkdownEmitField,
+  body: string,
+): string | undefined => {
+  if (typeof explicit === "string" && explicit !== "") {
+    return explicit;
+  }
+
+  if (explicit === true || explicit === false) {
+    return undefined;
+  }
+
+  if (emitField === field && body !== "") {
+    return body;
+  }
+
+  return undefined;
+};
+
+const isMarkdownEmitField = (value: string | boolean): value is MarkdownEmitField =>
+  typeof value === "string" && (MARKDOWN_EMIT_FIELDS as readonly string[]).includes(value);
 
 const interpretHookifyExecution = <Native>(
   handler: HookifyDiscoveredHandler<Native>,
