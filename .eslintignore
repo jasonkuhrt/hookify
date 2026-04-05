@@ -1,0 +1,2 @@
+# Generated plugin bundles — rebuild via `bun run build:plugin-claude`.
+plugins/hookify-claude/hooks/dispatch-claude.mjs

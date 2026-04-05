@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "hookify",
+  "description": "Hookify — cross-agent (Claude + Codex) hook runtime with a shared .hookify/ directory contract",
+  "owner": {
+    "name": "Jason Kuhrt",
+    "url": "https://github.com/jasonkuhrt"
+  },
+  "plugins": [
+    {
+      "name": "hookify-claude",
+      "description": "Claude Code integration for Hookify. Discovers and executes .hookify/<event>/*.{ts,sh,md,...} handlers from user and project scopes on every Claude hook event.",
+      "source": "./plugins/hookify-claude",
+      "category": "workflow",
+      "homepage": "https://github.com/jasonkuhrt/hookify"
+    }
+  ]
+}

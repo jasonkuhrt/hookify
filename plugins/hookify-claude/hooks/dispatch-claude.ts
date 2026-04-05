@@ -1,12 +1,19 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 
 import {
   executeClaudeHookify,
   parseClaudeNativeEvent,
 } from "../../../packages/integration-claude/src/index.ts";
 
-const readStandardInput = async (): Promise<string> =>
-  await new Response(Bun.stdin.stream()).text();
+const readStandardInput = async (): Promise<string> => {
+  const chunks: Buffer[] = [];
+
+  for await (const chunk of process.stdin) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+
+  return Buffer.concat(chunks).toString("utf8");
+};
 
 const main = async (): Promise<void> => {
   const input = (await readStandardInput()).trim();
