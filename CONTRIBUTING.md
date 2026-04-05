@@ -27,13 +27,12 @@ Hookify is a small Bun workspace. Root files define the shared toolchain, and ea
 | [`packages/schema`](packages/schema/src/index.ts)                             | Versioned [`envelope`](README.md#envelope) and result contract                                                                                      |
 | [`packages/core`](packages/core/src/index.ts)                                 | Shared primitives such as filename parsing and env projection                                                                                       |
 | [`packages/runtime`](packages/runtime/src/index.ts)                           | Neutral root resolution, handler discovery, process execution, and result aggregation                                                               |
-| [`packages/install`](packages/install/src/index.ts)                           | Generated install artifacts such as stamped dispatcher files and native hook config renderers                                                       |
-| [`packages/cli`](packages/cli/src/bin.ts)                                     | Publishable `hookify` entrypoint for `npx hookify install` and explicit per-agent installs                                                          |
+| [`packages/install`](packages/install/src/index.ts)                           | Codex-local bootstrap: symlinks the repo plugin, upserts the personal marketplace, enables the plugin in `~/.codex/config.toml`                     |
+| [`packages/cli`](packages/cli/src/bin.ts)                                     | Publishable `hookify` entrypoint for `npx hookify install codex` and the Claude marketplace instructions                                            |
 | [`packages/adapter-codex`](packages/adapter-codex/src/index.ts)               | Codex-native event typing, normalization, and response translation                                                                                  |
 | [`packages/adapter-claude`](packages/adapter-claude/src/index.ts)             | Claude-native event typing and normalization bootstrap                                                                                              |
 | [`packages/integration-codex`](packages/integration-codex/src/index.ts)       | End-to-end Codex integration that resolves runtime context and executes handlers                                                                    |
 | [`packages/integration-claude`](packages/integration-claude/src/index.ts)     | End-to-end Claude integration that resolves runtime context and executes handlers                                                                   |
-| [`integrations/claude/hooks`](integrations/claude/hooks/dispatch-claude.ts)   | Source-first Claude hook dispatcher and sample `hooks/hooks.json` wiring                                                                            |
 
 Tests live next to the code they protect as `src/*.test.ts`. If you are changing behavior, start in the package that owns that behavior and extend its local test file first.
 

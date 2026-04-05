@@ -113,9 +113,9 @@ An **adapter** is the only place agent quirks belong. An [`adapter`](#adapter) m
 
 ## Usage
 
-The examples below assume a workspace checkout while the packages are still source-first and unpublished.
+The examples below import from workspace package paths. End users interact with Hookify through the installed plugins (see [Install](#install)); these examples are for library consumers and contributors working in this monorepo.
 
-For the verified cross-agent event matrix, payload mapping, and output rules, see [docs/hook-authoring.md](docs/hook-authoring.md). For the current skills-first packaging strategy, see [docs/distribution.md](docs/distribution.md).
+For the verified cross-agent event matrix, payload mapping, output rules, and declarative markdown handler contract, see [docs/hook-authoring.md](docs/hook-authoring.md). For the current plugin distribution model, see [docs/distribution.md](docs/distribution.md).
 
 When you need to decide whether a hook file should run for an agent, parse the filename once and keep the decision in data instead of string-matching ad hoc.
 
@@ -255,17 +255,17 @@ console.log(execution.output);
 
 ## Package Index
 
-| Package                                                                   | Role                           | Current surface                                                                   |
-| ------------------------------------------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------- |
-| [`@hookify/schema`](packages/schema/src/index.ts)                         | Versioned data contract        | Agents, events, scopes, tool kinds, envelope shape, result shape                  |
-| [`@hookify/core`](packages/core/src/index.ts)                             | Shared primitives              | Filename parsing, applicability checks, environment projection                    |
-| [`@hookify/runtime`](packages/runtime/src/index.ts)                       | Neutral execution engine       | Root resolution, handler discovery, process execution, result aggregation         |
-| [`@hookify/install`](packages/install/src/index.ts)                       | Install artifact generator     | Generated dispatcher sources, native hook config JSON, provenance banner stamping |
-| [`hookify`](packages/cli/src/bin.ts)                                      | npx entrypoint                 | `hookify install`, `hookify install codex`, `hookify install claude`              |
-| [`@hookify/adapter-codex`](packages/adapter-codex/src/index.ts)           | Codex protocol boundary        | Codex event-name mapping, envelope construction, result translation               |
-| [`@hookify/adapter-claude`](packages/adapter-claude/src/index.ts)         | Claude protocol boundary       | Claude event-name mapping and normalized bootstrap for shared fields              |
-| [`@hookify/integration-codex`](packages/integration-codex/src/index.ts)   | Codex installable integration  | End-to-end Codex execution path from native event JSON to Hookify handler output  |
-| [`@hookify/integration-claude`](packages/integration-claude/src/index.ts) | Claude installable integration | End-to-end Claude execution path from native event JSON to Hookify handler output |
+| Package                                                                   | Role                           | Current surface                                                                                             |
+| ------------------------------------------------------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| [`@hookify/schema`](packages/schema/src/index.ts)                         | Versioned data contract        | Agents, events, scopes, tool kinds, envelope shape, result shape                                            |
+| [`@hookify/core`](packages/core/src/index.ts)                             | Shared primitives              | Filename parsing, applicability checks, environment projection                                              |
+| [`@hookify/runtime`](packages/runtime/src/index.ts)                       | Neutral execution engine       | Root resolution, handler discovery, process execution, result aggregation                                   |
+| [`@hookify/install`](packages/install/src/index.ts)                       | Codex-local bootstrap          | Symlink repo plugin into `~/plugins/hookify`, upsert personal marketplace, enable in `~/.codex/config.toml` |
+| [`hookify`](packages/cli/src/bin.ts)                                      | npx entrypoint                 | `hookify install codex` and Claude marketplace instructions                                                 |
+| [`@hookify/adapter-codex`](packages/adapter-codex/src/index.ts)           | Codex protocol boundary        | Codex event-name mapping, envelope construction, result translation                                         |
+| [`@hookify/adapter-claude`](packages/adapter-claude/src/index.ts)         | Claude protocol boundary       | Claude event-name mapping and normalized bootstrap for shared fields                                        |
+| [`@hookify/integration-codex`](packages/integration-codex/src/index.ts)   | Codex installable integration  | End-to-end Codex execution path from native event JSON to Hookify handler output                            |
+| [`@hookify/integration-claude`](packages/integration-claude/src/index.ts) | Claude installable integration | End-to-end Claude execution path from native event JSON to Hookify handler output                           |
 
 Plugin packaging lives in [`plugins/hookify-claude`](plugins/hookify-claude) (Claude Code) and [`plugins/hookify`](plugins/hookify) (Codex). Each plugin ships a bundled Node-compatible dispatcher (`dispatch-claude.mjs` / `dispatch-codex.mjs`) so the plugin directory is self-contained and has no runtime import into the monorepo. Rebuild the bundles with `bun run build:plugins`; `bun run check` verifies they are fresh.
 

@@ -4,21 +4,21 @@ import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-test("dispatch-claude executes the Claude-facing path end to end", async () => {
+test("dispatch-claude.mjs executes the Claude-facing path end to end via node", async () => {
   const workspacePath = await mkdtemp(join(tmpdir(), "hookify-claude-plugin-"));
 
   try {
     const homeDirectoryPath = join(workspacePath, "home");
     const projectRootPath = join(workspacePath, "repo");
-    const dispatcherPath = join(import.meta.dir, "dispatch-claude.ts");
+    const dispatcherPath = join(import.meta.dir, "dispatch-claude.mjs");
 
     await mkdir(join(homeDirectoryPath, ".hookify", "pre-tool-use"), { recursive: true });
     await mkdir(join(projectRootPath, ".git"), { recursive: true });
     await mkdir(join(projectRootPath, ".hookify", "pre-tool-use"), { recursive: true });
 
     await Bun.write(
-      join(homeDirectoryPath, ".hookify", "pre-tool-use", "10-warn.all.ts"),
-      `console.log(JSON.stringify({ additionalContext: "user policy" }));`,
+      join(homeDirectoryPath, ".hookify", "pre-tool-use", "10-warn.all.md"),
+      "user policy",
     );
     await Bun.write(
       join(projectRootPath, ".hookify", "pre-tool-use", "20-block.all.sh"),
@@ -32,7 +32,7 @@ test("dispatch-claude executes the Claude-facing path end to end", async () => {
       ].join("\n"),
     );
 
-    const childProcess = spawn("bun", [dispatcherPath], {
+    const childProcess = spawn("node", [dispatcherPath], {
       env: {
         ...process.env,
         HOME: homeDirectoryPath,
@@ -79,8 +79,8 @@ test("dispatch-claude executes the Claude-facing path end to end", async () => {
         hookEventName: "PreToolUse",
         permissionDecision: "deny",
         permissionDecisionReason: "cmux is forbidden",
-        additionalContext: "user policy",
       },
+      systemMessage: "user policy",
     });
   } finally {
     await rm(workspacePath, { recursive: true, force: true });
