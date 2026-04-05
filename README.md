@@ -6,20 +6,33 @@ Hookify standardizes hook discovery and execution for Claude and Codex without d
 
 ## Install
 
-One command:
+Hookify ships as a native plugin for each agent. Install the plugin for the agent you use, then author hooks in `.hookify/` directories — no more editing agent-native hook config.
 
-```sh
-npx hookify install
+### Claude Code
+
+```text
+/plugin marketplace add jasonkuhrt/hookify
+/plugin install hookify-claude@hookify
 ```
 
-Hookify detects Codex and Claude on the machine and installs the native bridge for whichever agents are present. After that, you edit `.hookify/` files, not agent-native hook config.
+Restart Claude Code. The plugin dispatcher runs on plain Node, so there is no runtime dependency beyond what Claude Code already has.
 
-If you want to target one agent explicitly:
+### Codex
+
+Codex does not yet support remote plugin marketplaces, so a one-time clone is required:
 
 ```sh
+git clone https://github.com/jasonkuhrt/hookify ~/.local/share/hookify
 npx hookify install codex
-npx hookify install claude
 ```
+
+Restart Codex. `hookify install codex` registers the repo's `hookify` plugin in your personal Codex marketplace at `~/.agents/plugins/marketplace.json` and enables it in `~/.codex/config.toml`.
+
+When Codex ships public plugin distribution, this collapses to a single marketplace command like the Claude path.
+
+### Authoring hooks
+
+Create executable handlers (`.ts`, `.sh`, `.bash`, etc.) or declarative markdown handlers (`.md`) under `.hookify/<event>/` at either `~/.hookify/` (user scope) or `<repo>/.hookify/` (project scope). See [docs/hook-authoring.md](docs/hook-authoring.md) for the event matrix, payload mapping, and markdown handler contract.
 
 ## Grounding
 
@@ -254,9 +267,7 @@ console.log(execution.output);
 | [`@hookify/integration-codex`](packages/integration-codex/src/index.ts)   | Codex installable integration  | End-to-end Codex execution path from native event JSON to Hookify handler output  |
 | [`@hookify/integration-claude`](packages/integration-claude/src/index.ts) | Claude installable integration | End-to-end Claude execution path from native event JSON to Hookify handler output |
 
-The repo now ships source-first executable paths for both agents: Codex through [`plugins/hookify/hooks/dispatch-codex.ts`](plugins/hookify/hooks/dispatch-codex.ts) with [`plugins/hookify/hooks.json`](plugins/hookify/hooks.json), and Claude through [`integrations/claude/hooks/dispatch-claude.ts`](integrations/claude/hooks/dispatch-claude.ts) with [`integrations/claude/hooks/hooks.json`](integrations/claude/hooks/hooks.json). It also now includes a source-first Claude plugin wrapper at [`plugins/hookify-claude`](plugins/hookify-claude/.claude-plugin/plugin.json) that shares the Hookify skill surface.
-
-Generated install dispatchers should come from [`@hookify/install`](packages/install/src/index.ts), not from hand-written local glue. The generated dispatcher source carries a provenance banner that records the native install surface, install method, actor, and timestamp.
+Plugin packaging lives in [`plugins/hookify-claude`](plugins/hookify-claude) (Claude Code) and [`plugins/hookify`](plugins/hookify) (Codex). Each plugin ships a bundled Node-compatible dispatcher (`dispatch-claude.mjs` / `dispatch-codex.mjs`) so the plugin directory is self-contained and has no runtime import into the monorepo. Rebuild the bundles with `bun run build:plugins`; `bun run check` verifies they are fresh.
 
 ## Glossary
 

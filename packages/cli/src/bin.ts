@@ -1,6 +1,5 @@
 #!/usr/bin/env bun
 
-import { installHookifyClaude } from "@hookify/install/claude";
 import { installHookifyCodex } from "@hookify/install/codex";
 import { detectInstalledHookifyAgents } from "@hookify/install/detect";
 
@@ -43,21 +42,15 @@ const main = async (): Promise<void> => {
         continue;
       }
 
-      const result = await installHookifyClaude({
-        installedVia: createInstalledViaLabel(
-          target === undefined ? ["install"] : ["install", installTarget],
-        ),
-      });
-
       outputSections.push(
         [
-          "Hookify for Claude installed.",
-          `Plugin id: ${result.installedPluginId}`,
-          `Generated marketplace: ${result.generatedMarketplacePath}`,
-          `Generated plugin: ${result.generatedPluginPath}`,
-          `Generated dispatcher: ${result.generatedDispatcherPath}`,
-          `Claude settings: ${result.claudeSettingsPath}`,
-          "Reload Claude plugins or restart Claude Code if it is already running.",
+          "Hookify for Claude installs via Claude Code's native plugin marketplace.",
+          "",
+          "Run these inside Claude Code:",
+          "  /plugin marketplace add jasonkuhrt/hookify",
+          "  /plugin install hookify-claude@hookify",
+          "",
+          "Then restart Claude Code.",
         ].join("\n"),
       );
     }

@@ -5,12 +5,10 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
-    "./claude": "./src/claude.ts",
     "./codex": "./src/codex.ts",
     "./detect": "./src/detect.ts"
   },
   "dependencies": {
-    "@hookify/adapter-claude": "workspace:*",
     "@hookify/adapter-codex": "workspace:*",
     "@hookify/schema": "workspace:*"
   }

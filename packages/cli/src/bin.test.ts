@@ -112,27 +112,16 @@ test("hookify install auto-detects Codex and Claude and installs both", async ()
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
     expect(stdout).toContain("Hookify for Codex installed.");
-    expect(stdout).toContain("Hookify for Claude installed.");
+    expect(stdout).toContain("/plugin marketplace add jasonkuhrt/hookify");
+    expect(stdout).toContain("/plugin install hookify-claude@hookify");
 
-    const [codexDispatcherSource, claudeDispatcherSource] = await Promise.all([
-      readFile(join(hookifyHomePath, "plugins", "hookify", "hooks", "dispatch-codex.ts"), "utf8"),
-      readFile(
-        join(
-          hookifyHomePath,
-          "claude-marketplace",
-          "plugins",
-          "hookify",
-          "hooks",
-          "dispatch-claude.ts",
-        ),
-        "utf8",
-      ),
-    ]);
+    const codexDispatcherSource = await readFile(
+      join(hookifyHomePath, "plugins", "hookify", "hooks", "dispatch-codex.ts"),
+      "utf8",
+    );
 
     expect(codexDispatcherSource).toContain("// Installed via: npx:hookify install");
     expect(codexDispatcherSource).toContain("// Installed by: cli-test");
-    expect(claudeDispatcherSource).toContain("// Installed via: npx:hookify install");
-    expect(claudeDispatcherSource).toContain("// Installed by: cli-test");
   } finally {
     await rm(workspacePath, { recursive: true, force: true });
   }

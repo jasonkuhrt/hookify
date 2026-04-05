@@ -4,9 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 import {
-  createClaudeHooksConfiguration,
   createCodexHooksConfiguration,
-  renderClaudeDispatcherSource,
   renderCodexDispatcherSource,
   resolveHookifyInstallProvenance,
   writeCodexDispatcherSource,
@@ -49,22 +47,6 @@ test("renderCodexDispatcherSource includes install provenance in the generated b
   expect(source).toContain("// Installed by: jasonkuhrt");
   expect(source).toContain("// Installed at: 2026-04-03T15:30:00.000Z");
   expect(source).toContain('} from "@hookify/integration-codex";');
-});
-
-test("renderClaudeDispatcherSource includes install provenance in the generated banner", () => {
-  const source = renderClaudeDispatcherSource({
-    importPath: "@hookify/integration-claude",
-    provenance: {
-      installSurface: "claude-plugin",
-      installedVia: "skill:hookify-install",
-      installedBy: "jasonkuhrt",
-      installedAt: "2026-04-03T15:31:00.000Z",
-    },
-  });
-
-  expect(source).toContain("// Agent: claude");
-  expect(source).toContain("// Install surface: claude-plugin");
-  expect(source).toContain('} from "@hookify/integration-claude";');
 });
 
 test("writeCodexDispatcherSource writes an executable generated file", async () => {
@@ -151,140 +133,6 @@ test("createCodexHooksConfiguration renders the Bash matcher only where Codex re
             {
               type: "command",
               command: "bun ~/.codex/hooks/hookify.ts",
-            },
-          ],
-        },
-      ],
-    },
-  });
-});
-
-test("createClaudeHooksConfiguration renders the current Hookify Claude install set", () => {
-  expect(
-    createClaudeHooksConfiguration({
-      command: "bun ${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-claude.ts",
-      timeoutSeconds: 10,
-    }),
-  ).toEqual({
-    description: "Hookify Claude install",
-    hooks: {
-      SessionStart: [
-        {
-          hooks: [
-            {
-              type: "command",
-              command: "bun ${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-claude.ts",
-              timeout: 10,
-            },
-          ],
-        },
-      ],
-      UserPromptSubmit: [
-        {
-          hooks: [
-            {
-              type: "command",
-              command: "bun ${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-claude.ts",
-              timeout: 10,
-            },
-          ],
-        },
-      ],
-      PreToolUse: [
-        {
-          hooks: [
-            {
-              type: "command",
-              command: "bun ${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-claude.ts",
-              timeout: 10,
-            },
-          ],
-        },
-      ],
-      PermissionRequest: [
-        {
-          hooks: [
-            {
-              type: "command",
-              command: "bun ${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-claude.ts",
-              timeout: 10,
-            },
-          ],
-        },
-      ],
-      PostToolUse: [
-        {
-          hooks: [
-            {
-              type: "command",
-              command: "bun ${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-claude.ts",
-              timeout: 10,
-            },
-          ],
-        },
-      ],
-      PostToolUseFailure: [
-        {
-          hooks: [
-            {
-              type: "command",
-              command: "bun ${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-claude.ts",
-              timeout: 10,
-            },
-          ],
-        },
-      ],
-      Notification: [
-        {
-          hooks: [
-            {
-              type: "command",
-              command: "bun ${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-claude.ts",
-              timeout: 10,
-            },
-          ],
-        },
-      ],
-      Stop: [
-        {
-          hooks: [
-            {
-              type: "command",
-              command: "bun ${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-claude.ts",
-              timeout: 10,
-            },
-          ],
-        },
-      ],
-      SubagentStop: [
-        {
-          hooks: [
-            {
-              type: "command",
-              command: "bun ${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-claude.ts",
-              timeout: 10,
-            },
-          ],
-        },
-      ],
-      PreCompact: [
-        {
-          hooks: [
-            {
-              type: "command",
-              command: "bun ${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-claude.ts",
-              timeout: 10,
-            },
-          ],
-        },
-      ],
-      SessionEnd: [
-        {
-          hooks: [
-            {
-              type: "command",
-              command: "bun ${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-claude.ts",
-              timeout: 10,
             },
           ],
         },
