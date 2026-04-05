@@ -4,7 +4,6 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./src/index.ts",
     "./codex": "./src/codex.ts",
     "./detect": "./src/detect.ts"
   },
