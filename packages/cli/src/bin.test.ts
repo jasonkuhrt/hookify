@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { spawn } from "node:child_process";
@@ -51,14 +51,7 @@ test("hookify install codex runs through the npx-shaped cli entrypoint", async (
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
     expect(stdout).toContain("Hookify for Codex installed.");
-
-    const dispatcherSource = await readFile(
-      join(hookifyHomePath, "plugins", "hookify", "hooks", "dispatch-codex.ts"),
-      "utf8",
-    );
-
-    expect(dispatcherSource).toContain("// Installed via: npx:hookify install codex");
-    expect(dispatcherSource).toContain("// Installed by: cli-test");
+    expect(stdout).toContain("Plugin id: hookify@hookify-local");
   } finally {
     await rm(workspacePath, { recursive: true, force: true });
   }
@@ -112,16 +105,9 @@ test("hookify install auto-detects Codex and Claude and installs both", async ()
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
     expect(stdout).toContain("Hookify for Codex installed.");
+    expect(stdout).toContain("Plugin id: hookify@hookify-local");
     expect(stdout).toContain("/plugin marketplace add jasonkuhrt/hookify");
     expect(stdout).toContain("/plugin install hookify-claude@hookify");
-
-    const codexDispatcherSource = await readFile(
-      join(hookifyHomePath, "plugins", "hookify", "hooks", "dispatch-codex.ts"),
-      "utf8",
-    );
-
-    expect(codexDispatcherSource).toContain("// Installed via: npx:hookify install");
-    expect(codexDispatcherSource).toContain("// Installed by: cli-test");
   } finally {
     await rm(workspacePath, { recursive: true, force: true });
   }

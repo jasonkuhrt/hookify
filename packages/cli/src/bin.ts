@@ -30,9 +30,7 @@ const main = async (): Promise<void> => {
           [
             "Hookify for Codex installed.",
             `Plugin id: ${result.installedPluginId}`,
-            `Generated plugin: ${result.generatedPluginPath}`,
             `Home plugin link: ${result.pluginLinkPath}`,
-            `Generated dispatcher: ${result.generatedDispatcherPath}`,
             `Marketplace: ${result.personalMarketplacePath}`,
             `Codex config: ${result.codexConfigPath}`,
             `Codex hooks cleanup: ${result.codexHooksPath}`,

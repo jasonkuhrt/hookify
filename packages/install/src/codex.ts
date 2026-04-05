@@ -2,12 +2,6 @@ import { lstat, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises
 import { dirname, join, resolve } from "node:path";
 import { homedir } from "node:os";
 
-import {
-  renderCodexHooksJson,
-  resolveHookifyInstallProvenance,
-  writeCodexDispatcherSource,
-} from "./index";
-
 interface CodexHookCommand {
   type?: string;
   command?: unknown;
@@ -49,7 +43,6 @@ interface CodexMarketplaceFile {
 
 export interface InstallHookifyCodexOptions {
   homeDirectory?: string;
-  hookifyHome?: string;
   repoPath?: string;
   installedVia?: string;
   installedBy?: string;
@@ -57,9 +50,7 @@ export interface InstallHookifyCodexOptions {
 
 export interface InstallHookifyCodexResult {
   installedPluginId: string;
-  generatedPluginPath: string;
   pluginLinkPath: string;
-  generatedDispatcherPath: string;
   personalMarketplacePath: string;
   codexConfigPath: string;
   codexHooksPath: string;
@@ -69,64 +60,28 @@ export const installHookifyCodex = async (
   options: InstallHookifyCodexOptions = {},
 ): Promise<InstallHookifyCodexResult> => {
   const homeDirectory = resolve(options.homeDirectory ?? process.env.HOME ?? homedir());
-  const hookifyHome = resolve(
-    options.hookifyHome ??
-      process.env.HOOKIFY_HOME ??
+  const repoPath = resolve(
+    options.repoPath ??
+      process.env.HOOKIFY_REPO_DIR ??
       join(homeDirectory, ".local", "share", "hookify"),
   );
-  const repoPath = resolve(
-    options.repoPath ?? process.env.HOOKIFY_REPO_DIR ?? join(hookifyHome, "repo"),
-  );
-  const generatedPluginPath = join(hookifyHome, "plugins", "hookify");
+  const repoPluginPath = join(repoPath, "plugins", "hookify");
   const pluginLinkPath = join(homeDirectory, "plugins", "hookify");
   const personalMarketplacePath = join(homeDirectory, ".agents", "plugins", "marketplace.json");
   const codexConfigPath = join(homeDirectory, ".codex", "config.toml");
   const codexHooksPath = join(homeDirectory, ".codex", "hooks.json");
-  const dispatcherPath = join(generatedPluginPath, "hooks", "dispatch-codex.ts");
-  const repoIntegrationPath = join(repoPath, "packages", "integration-codex", "src", "index.ts");
-  const repoSkillsPath = join(repoPath, "plugins", "hookify", "skills");
-  const repoAgentsPath = join(repoPath, "plugins", "hookify", "agents");
-  const repoPluginManifestPath = join(
-    repoPath,
-    "plugins",
-    "hookify",
-    ".codex-plugin",
-    "plugin.json",
+  const repoPluginManifestPath = join(repoPluginPath, ".codex-plugin", "plugin.json");
+  const repoBundledDispatcherPath = join(repoPluginPath, "hooks", "dispatch-codex.mjs");
+
+  await assertPathExists(repoPluginManifestPath, "Hookify Codex plugin manifest");
+  await assertPathExists(
+    repoBundledDispatcherPath,
+    "Hookify Codex bundled dispatcher (run `bun run build:plugins` in the hookify repo)",
   );
 
-  await assertPathExists(repoIntegrationPath, "Hookify Codex integration source");
-  await assertPathExists(repoSkillsPath, "Hookify Codex skills directory");
-  await assertPathExists(repoAgentsPath, "Hookify Codex agents directory");
-  await assertPathExists(repoPluginManifestPath, "Hookify Codex plugin manifest");
-
-  const provenance = resolveHookifyInstallProvenance({
-    installSurface: "codex-plugin",
-    installedVia:
-      options.installedVia ?? process.env.HOOKIFY_INSTALLED_VIA ?? "script:install-codex.sh",
-    ...(options.installedBy ? { installedBy: options.installedBy } : {}),
-  });
-
-  await mkdir(join(generatedPluginPath, ".codex-plugin"), { recursive: true });
-  await mkdir(join(generatedPluginPath, "hooks"), { recursive: true });
   await mkdir(dirname(personalMarketplacePath), { recursive: true });
   await mkdir(dirname(codexConfigPath), { recursive: true });
-
-  await writeCodexDispatcherSource({
-    pathname: dispatcherPath,
-    importPath: repoIntegrationPath,
-    provenance,
-  });
-  await writeFile(
-    join(generatedPluginPath, "hooks.json"),
-    renderCodexHooksJson({
-      command: "bun ./hooks/dispatch-codex.ts",
-    }),
-    "utf8",
-  );
-  await copyFile(repoPluginManifestPath, join(generatedPluginPath, ".codex-plugin", "plugin.json"));
-  await replaceWithSymlink(repoSkillsPath, join(generatedPluginPath, "skills"));
-  await replaceWithSymlink(repoAgentsPath, join(generatedPluginPath, "agents"));
-  await replaceWithSymlink(generatedPluginPath, pluginLinkPath);
+  await replaceWithSymlink(repoPluginPath, pluginLinkPath);
 
   const marketplaceName = await upsertCodexMarketplace(personalMarketplacePath);
   await ensureCodexConfig(codexConfigPath, marketplaceName);
@@ -134,9 +89,7 @@ export const installHookifyCodex = async (
 
   return {
     installedPluginId: `hookify@${marketplaceName}`,
-    generatedPluginPath,
     pluginLinkPath,
-    generatedDispatcherPath: dispatcherPath,
     personalMarketplacePath,
     codexConfigPath,
     codexHooksPath,
@@ -156,11 +109,6 @@ const replaceWithSymlink = async (targetPath: string, linkPath: string): Promise
   await rm(linkPath, { recursive: true, force: true });
   await mkdir(dirname(linkPath), { recursive: true });
   await symlink(targetPath, linkPath, "dir");
-};
-
-const copyFile = async (sourcePath: string, destinationPath: string): Promise<void> => {
-  await mkdir(dirname(destinationPath), { recursive: true });
-  await writeFile(destinationPath, await readFile(sourcePath, "utf8"), "utf8");
 };
 
 const upsertCodexMarketplace = async (pathname: string): Promise<string> => {
