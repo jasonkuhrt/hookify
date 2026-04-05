@@ -86,6 +86,35 @@ export const installHookifyCodex = async (
   await replaceWithSymlink(repoPluginPath, pluginLinkPath);
 
   const marketplaceName = await upsertCodexMarketplace(personalMarketplacePath);
+  // FIXME(codex-plugin-install): reaches into Codex's internal plugin cache layout
+  // because Codex ships no scriptable install surface today. When an official
+  // install path becomes available, migrate this symlink off of the cache
+  // directly and replace it with the official call.
+  //
+  // What we are mimicking:
+  //   github.com/openai/codex @ b5edeb98a0f3a7a0f43243f6ae06bc7de6cfacc0
+  //     codex-rs/core/src/plugins/store.rs
+  //       const PLUGINS_CACHE_DIR: &str = "plugins/cache"
+  //       const DEFAULT_PLUGIN_VERSION: &str = "local"
+  //       PluginStore::plugin_root(id, version) = root/<marketplace>/<plugin>/<version>
+  //       PluginStore::install_with_version copies source_path into that cache path.
+  //     codex-rs/core/src/plugins/manager.rs::install_resolved_plugin
+  //       also sets plugins.<id>.enabled=true in config.toml after the copy.
+  //
+  // Why a symlink rather than a copy:
+  //   Codex reads via is_dir() which follows symlinks, and active_plugin_version
+  //   enumerates "/local" purely by directory name. Symlink makes the installed
+  //   plugin track the repo working copy for dev workflow.
+  //
+  // Official migration targets (when they become scriptable from a regular shell):
+  //   1. A `codex plugin install <id>` CLI subcommand (does not exist as of the
+  //      pinned SHA above — verified in codex-rs/cli/src/main.rs::Subcommand).
+  //   2. Driving `codex app-server` (experimental) over JSON-RPC with the
+  //      ClientRequest::PluginInstall message (codex-rs/app-server-protocol
+  //      /src/protocol/v2.rs::PluginInstallParams, handled in
+  //      codex-rs/app-server/src/codex_message_processor.rs::plugin_install).
+  //      Exists today but marked [experimental] and requires spawning the
+  //      server, more surface than the symlink.
   const codexPluginCachePath = join(
     codexHomeDirectory,
     "plugins",
