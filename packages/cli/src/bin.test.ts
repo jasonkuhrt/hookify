@@ -11,7 +11,6 @@ test("hookify install codex runs through the npx-shaped cli entrypoint", async (
 
   try {
     const homeDirectoryPath = join(workspacePath, "home");
-    const hookifyHomePath = join(homeDirectoryPath, ".local", "share", "hookify");
     const codexHooksPath = join(homeDirectoryPath, ".codex", "hooks.json");
     const cliPath = join(import.meta.dir, "bin.ts");
 
@@ -23,7 +22,6 @@ test("hookify install codex runs through the npx-shaped cli entrypoint", async (
       env: {
         ...process.env,
         HOME: homeDirectoryPath,
-        HOOKIFY_HOME: hookifyHomePath,
         HOOKIFY_REPO_DIR: repoRootPath,
         HOOKIFY_INSTALL_ACTOR: "cli-test",
         npm_execpath: "/opt/homebrew/bin/npx",
@@ -62,7 +60,6 @@ test("hookify install auto-detects Codex and Claude and installs both", async ()
 
   try {
     const homeDirectoryPath = join(workspacePath, "home");
-    const hookifyHomePath = join(homeDirectoryPath, ".local", "share", "hookify");
     const codexHooksPath = join(homeDirectoryPath, ".codex", "hooks.json");
     const claudeSettingsPath = join(homeDirectoryPath, ".claude", "settings.json");
     const cliPath = join(import.meta.dir, "bin.ts");
@@ -77,7 +74,6 @@ test("hookify install auto-detects Codex and Claude and installs both", async ()
       env: {
         ...process.env,
         HOME: homeDirectoryPath,
-        HOOKIFY_HOME: hookifyHomePath,
         HOOKIFY_REPO_DIR: repoRootPath,
         HOOKIFY_INSTALL_ACTOR: "cli-test",
         npm_execpath: "/opt/homebrew/bin/npx",

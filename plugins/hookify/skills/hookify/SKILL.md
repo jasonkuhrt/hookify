@@ -70,7 +70,7 @@ If the user wants adoption or changes:
 
 - preserve existing intent
 - choose the minimal placement that matches the requested scope
-- generate native dispatcher files through `@hookify/install` rather than hand-writing local glue
+- install Hookify via the native plugin surface: `/plugin marketplace add jasonkuhrt/hookify` (Claude) or `npx hookify install codex` after cloning the repo (Codex)
 - keep shared behavior explicit with `.all`
 - keep agent-specific behavior explicit with `.claude` or `.codex`
 

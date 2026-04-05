@@ -46,7 +46,7 @@ Tests live next to the code they protect as `src/*.test.ts`. If you are changing
 
 `@hookify/runtime` owns filesystem-aware execution mechanics. Directory resolution, handler discovery, spawning, fail-open behavior, and result aggregation belong there rather than in adapters or plugin wrappers.
 
-`@hookify/install` owns generated install artifacts. If Hookify needs to write native-facing dispatcher files or hook config files, the source template and provenance banner belong there instead of being copied into skills, plugin wrappers, or user dotfiles.
+`@hookify/install` owns the Codex-local bootstrap. It symlinks the repo's `plugins/hookify/` into `~/plugins/hookify`, upserts the user's personal Codex marketplace entry, enables the plugin in `~/.codex/config.toml`, and cleans up legacy hookify entries in `~/.codex/hooks.json`. It should not try to manage Claude installs — Claude installs via the native plugin marketplace.
 
 `@hookify/integration-codex` owns the Codex-facing install surface above the runtime. It can depend on the Codex adapter and the runtime, but it should stay thin: read native Codex events, resolve context, execute Hookify handlers, translate the result back to Codex output.
 

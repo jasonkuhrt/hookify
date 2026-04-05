@@ -26,8 +26,12 @@ Use this skill when the job is to author or update Hookify hook files.
    - `user-prompt-submit`
    - `stop`
    - or an agent-specific event when the target agent supports one
-4. Inspect the existing `.hookify/` tree before creating new files.
-5. Read `references/event-map.md` before choosing the event and return shape.
+4. Determine runtime:
+   - `.md` for declarative static content (reminders, fixed block messages)
+   - `.ts`/`.mts`/`.cts`/`.js`/`.mjs`/`.cjs` when the rule needs to inspect the envelope or run logic
+   - `.sh`/`.bash` for shell-based rules that read `$HOOKIFY_ENVELOPE_PATH`
+5. Inspect the existing `.hookify/` tree before creating new files.
+6. Read `references/event-map.md` before choosing the event and return shape.
 
 ## Authoring rules
 
@@ -35,6 +39,7 @@ Use this skill when the job is to author or update Hookify hook files.
 - Keep ordering explicit with numeric prefixes when the directory already uses them.
 - Preserve existing local conventions before inventing new ones.
 - Prefer the narrowest event that can enforce the requested policy.
+- Prefer `.md` when the rule is a static reminder or fixed-message block — it is the simplest runtime and needs no shebang, bundler, or permissions.
 - When the behavior is meant for both Claude and Codex, `.all` is valid.
 - When the behavior depends on agent-only semantics, split into `.claude` or `.codex`.
 
