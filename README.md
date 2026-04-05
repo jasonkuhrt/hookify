@@ -6,29 +6,35 @@ Hookify standardizes hook discovery and execution for Claude and Codex without d
 
 ## Install
 
-Hookify ships as a native plugin for each agent. Install the plugin for the agent you use, then author hooks in `.hookify/` directories — no more editing agent-native hook config.
-
-### Claude Code
-
-```text
-/plugin marketplace add jasonkuhrt/hookify
-/plugin install hookify-claude@hookify
-```
-
-Restart Claude Code. The plugin dispatcher runs on plain Node, so there is no runtime dependency beyond what Claude Code already has.
-
-### Codex
-
-Codex does not yet support remote plugin marketplaces, so a one-time clone is required:
+One command, both agents:
 
 ```sh
-git clone https://github.com/jasonkuhrt/hookify ~/.local/share/hookify
+npx hookify install
+```
+
+Hookify detects Claude Code and Codex on the machine and installs the plugin for each. After that, you author hooks in `.hookify/` directories — no more editing agent-native hook config.
+
+If you want to target one agent explicitly:
+
+```sh
+npx hookify install claude
 npx hookify install codex
 ```
 
-Restart Codex. `hookify install codex` registers the repo's `hookify` plugin in your personal Codex marketplace at `~/.agents/plugins/marketplace.json` and enables it in `~/.codex/config.toml`.
+### What each path does
 
-When Codex ships public plugin distribution, this collapses to a single marketplace command like the Claude path.
+- **Claude**: wraps `claude plugin marketplace add jasonkuhrt/hookify` + `claude plugin install hookify-claude@hookify` at user scope. Requires the `claude` CLI on PATH (install Claude Code from https://claude.ai/code).
+- **Codex**: Codex does not yet support remote plugin marketplaces, so this flow expects a local checkout. The recommended shape is:
+
+  ```sh
+  git clone https://github.com/jasonkuhrt/hookify ~/.local/share/hookify
+  cd ~/.local/share/hookify
+  npx hookify install codex
+  ```
+
+  The installer symlinks the repo's `plugins/hookify/` into `~/plugins/hookify`, adds a `hookify` plugin entry to `~/.agents/plugins/marketplace.json`, and enables it in `~/.codex/config.toml`. When Codex ships public plugin distribution, this collapses to a single marketplace command like the Claude path.
+
+Both plugins ship a bundled Node-compatible dispatcher, so there is no runtime dependency beyond what the agent already has. Restart the agent after install.
 
 ### Authoring hooks
 
@@ -261,7 +267,8 @@ console.log(execution.output);
 | [`@hookify/core`](packages/core/src/index.ts)                             | Shared primitives              | Filename parsing, applicability checks, environment projection                                              |
 | [`@hookify/runtime`](packages/runtime/src/index.ts)                       | Neutral execution engine       | Root resolution, handler discovery, process execution, result aggregation                                   |
 | [`@hookify/install/codex`](packages/install/src/codex.ts)                 | Codex-local bootstrap          | Symlink repo plugin into `~/plugins/hookify`, upsert personal marketplace, enable in `~/.codex/config.toml` |
-| [`hookify`](packages/cli/src/bin.ts)                                      | npx entrypoint                 | `hookify install codex` and Claude marketplace instructions                                                 |
+| [`@hookify/install/claude`](packages/install/src/claude.ts)               | Claude CLI wrapper             | Shell out to `claude plugin marketplace add` + `claude plugin install`                                      |
+| [`hookify`](packages/cli/src/bin.ts)                                      | npx entrypoint                 | `hookify install` drives both agents; `hookify install {claude,codex}` scopes to one                        |
 | [`@hookify/adapter-codex`](packages/adapter-codex/src/index.ts)           | Codex protocol boundary        | Codex event-name mapping, envelope construction, result translation                                         |
 | [`@hookify/adapter-claude`](packages/adapter-claude/src/index.ts)         | Claude protocol boundary       | Claude event-name mapping and normalized bootstrap for shared fields                                        |
 | [`@hookify/integration-codex`](packages/integration-codex/src/index.ts)   | Codex installable integration  | End-to-end Codex execution path from native event JSON to Hookify handler output                            |

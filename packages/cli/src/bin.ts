@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 
+import { HookifyClaudeNotFoundError, installHookifyClaude } from "@hookify/install/claude";
 import { installHookifyCodex } from "@hookify/install/codex";
 import { detectInstalledHookifyAgents } from "@hookify/install/detect";
 
@@ -40,17 +41,34 @@ const main = async (): Promise<void> => {
         continue;
       }
 
-      outputSections.push(
-        [
-          "Hookify for Claude installs via Claude Code's native plugin marketplace.",
-          "",
-          "Run these inside Claude Code:",
-          "  /plugin marketplace add jasonkuhrt/hookify",
-          "  /plugin install hookify-claude@hookify",
-          "",
-          "Then restart Claude Code.",
-        ].join("\n"),
-      );
+      try {
+        const result = await installHookifyClaude();
+
+        outputSections.push(
+          [
+            "Hookify for Claude installed.",
+            `Plugin id: ${result.installedPluginId}`,
+            `Marketplace: ${result.marketplaceSource} (scope: ${result.scope})`,
+            `claude binary: ${result.claudeBin}`,
+            "Restart Claude Code to pick up the plugin if it is already running.",
+          ].join("\n"),
+        );
+      } catch (error) {
+        if (error instanceof HookifyClaudeNotFoundError) {
+          outputSections.push(
+            [
+              "Claude Code CLI not found on PATH.",
+              "",
+              "Install Claude Code (https://claude.ai/code) then rerun, or install manually:",
+              "  /plugin marketplace add jasonkuhrt/hookify",
+              "  /plugin install hookify-claude@hookify",
+            ].join("\n"),
+          );
+          continue;
+        }
+
+        throw error;
+      }
     }
 
     process.stdout.write(`${outputSections.join("\n\n")}\n`);

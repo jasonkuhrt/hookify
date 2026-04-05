@@ -27,8 +27,8 @@ Hookify is a small Bun workspace. Root files define the shared toolchain, and ea
 | [`packages/schema`](packages/schema/src/index.ts)                             | Versioned [`envelope`](README.md#envelope) and result contract                                                                                      |
 | [`packages/core`](packages/core/src/index.ts)                                 | Shared primitives such as filename parsing and env projection                                                                                       |
 | [`packages/runtime`](packages/runtime/src/index.ts)                           | Neutral root resolution, handler discovery, process execution, and result aggregation                                                               |
-| [`packages/install`](packages/install/src/codex.ts)                           | Codex-local bootstrap: symlinks the repo plugin, upserts the personal marketplace, enables the plugin in `~/.codex/config.toml`                     |
-| [`packages/cli`](packages/cli/src/bin.ts)                                     | Publishable `hookify` entrypoint for `npx hookify install codex` and the Claude marketplace instructions                                            |
+| [`packages/install`](packages/install/src/codex.ts)                           | Agent installers: Codex-local bootstrap (`./codex`) and Claude-CLI wrapper (`./claude`)                                                             |
+| [`packages/cli`](packages/cli/src/bin.ts)                                     | Publishable `hookify` entrypoint: `npx hookify install` drives both agents; `install {claude,codex}` scopes to one                                  |
 | [`packages/adapter-codex`](packages/adapter-codex/src/index.ts)               | Codex-native event typing, normalization, and response translation                                                                                  |
 | [`packages/adapter-claude`](packages/adapter-claude/src/index.ts)             | Claude-native event typing and normalization bootstrap                                                                                              |
 | [`packages/integration-codex`](packages/integration-codex/src/index.ts)       | End-to-end Codex integration that resolves runtime context and executes handlers                                                                    |
@@ -46,7 +46,7 @@ Tests live next to the code they protect as `src/*.test.ts`. If you are changing
 
 `@hookify/runtime` owns filesystem-aware execution mechanics. Directory resolution, handler discovery, spawning, fail-open behavior, and result aggregation belong there rather than in adapters or plugin wrappers.
 
-`@hookify/install` owns the Codex-local bootstrap. It symlinks the repo's `plugins/hookify/` into `~/plugins/hookify`, upserts the user's personal Codex marketplace entry, enables the plugin in `~/.codex/config.toml`, and cleans up legacy hookify entries in `~/.codex/hooks.json`. It should not try to manage Claude installs — Claude installs via the native plugin marketplace.
+`@hookify/install` owns both agent install flows. `./claude` is a thin wrapper around the `claude` CLI (`claude plugin marketplace add` + `claude plugin install`). `./codex` is the Codex-local bootstrap: it symlinks the repo's `plugins/hookify/` into `~/plugins/hookify`, upserts the user's personal Codex marketplace entry, enables the plugin in `~/.codex/config.toml`, and cleans up legacy hookify entries in `~/.codex/hooks.json`. Neither should reinvent what the agent's native plugin system already does.
 
 `@hookify/integration-codex` owns the Codex-facing install surface above the runtime. It can depend on the Codex adapter and the runtime, but it should stay thin: read native Codex events, resolve context, execute Hookify handlers, translate the result back to Codex output.
 

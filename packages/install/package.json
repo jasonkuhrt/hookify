@@ -4,6 +4,7 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
+    "./claude": "./src/claude.ts",
     "./codex": "./src/codex.ts",
     "./detect": "./src/detect.ts"
   },

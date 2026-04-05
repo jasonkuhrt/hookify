@@ -6,10 +6,12 @@ This page describes how Hookify ships to users today and how that should evolve.
 
 Hookify ships as one native plugin per agent. Each plugin is a self-contained directory in this repo with a bundled Node-compatible dispatcher, so no runtime import reaches into the monorepo once the plugin is installed.
 
-| Agent  | Plugin directory          | Marketplace manifest                      | Install flow                                                                |
-| ------ | ------------------------- | ----------------------------------------- | --------------------------------------------------------------------------- |
-| Claude | `plugins/hookify-claude/` | `.claude-plugin/marketplace.json` (root)  | Remote: `/plugin marketplace add jasonkuhrt/hookify`                        |
-| Codex  | `plugins/hookify/`        | `.agents/plugins/marketplace.json` (root) | Local: clone the repo, then `npx hookify install codex` to register locally |
+| Agent  | Plugin directory          | Marketplace manifest                      | Install flow                                                                                                                                                      |
+| ------ | ------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Claude | `plugins/hookify-claude/` | `.claude-plugin/marketplace.json` (root)  | Remote: `npx hookify install claude` (wraps `claude plugin marketplace add` + `claude plugin install`), or directly: `/plugin marketplace add jasonkuhrt/hookify` |
+| Codex  | `plugins/hookify/`        | `.agents/plugins/marketplace.json` (root) | Local: clone the repo, then `npx hookify install codex` to register locally                                                                                       |
+
+The one-command path `npx hookify install` drives both where it can — it shells out to the `claude` CLI if it is on PATH, and runs the Codex local bootstrap if `~/.codex/` or a `codex` binary is detected.
 
 Both dispatchers are bundled with `bun run build:plugins` and committed to the repo. The bundle is checked for staleness as part of `bun run check`.
 

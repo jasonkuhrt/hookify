@@ -1,10 +1,19 @@
 import { expect, test } from "bun:test";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { chmod, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { delimiter, dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { spawn } from "node:child_process";
 
 const repoRootPath = join(import.meta.dir, "..", "..", "..");
+
+const writeFakeClaudeBinary = async (directoryPath: string): Promise<string> => {
+  const binaryPath = join(directoryPath, "claude");
+
+  await writeFile(binaryPath, "#!/usr/bin/env bash\nexit 0\n");
+  await chmod(binaryPath, 0o755);
+
+  return binaryPath;
+};
 
 test("hookify install codex runs through the npx-shaped cli entrypoint", async () => {
   const workspacePath = await mkdtemp(join(tmpdir(), "hookify-cli-"));
@@ -60,14 +69,17 @@ test("hookify install auto-detects Codex and Claude and installs both", async ()
 
   try {
     const homeDirectoryPath = join(workspacePath, "home");
+    const binDirectoryPath = join(workspacePath, "bin");
     const codexHooksPath = join(homeDirectoryPath, ".codex", "hooks.json");
     const claudeSettingsPath = join(homeDirectoryPath, ".claude", "settings.json");
     const cliPath = join(import.meta.dir, "bin.ts");
 
     await mkdir(dirname(codexHooksPath), { recursive: true });
     await mkdir(dirname(claudeSettingsPath), { recursive: true });
+    await mkdir(binDirectoryPath, { recursive: true });
     await Bun.write(codexHooksPath, '{ "hooks": {} }\n');
     await Bun.write(claudeSettingsPath, '{ "enabledPlugins": {} }\n');
+    await writeFakeClaudeBinary(binDirectoryPath);
 
     const childProcess = spawn("bun", [cliPath, "install"], {
       cwd: repoRootPath,
@@ -76,6 +88,7 @@ test("hookify install auto-detects Codex and Claude and installs both", async ()
         HOME: homeDirectoryPath,
         HOOKIFY_REPO_DIR: repoRootPath,
         HOOKIFY_INSTALL_ACTOR: "cli-test",
+        PATH: `${binDirectoryPath}${delimiter}${process.env.PATH ?? ""}`,
         npm_execpath: "/opt/homebrew/bin/npx",
       },
       stdio: ["ignore", "pipe", "pipe"],
@@ -102,8 +115,8 @@ test("hookify install auto-detects Codex and Claude and installs both", async ()
     expect(stderr).toBe("");
     expect(stdout).toContain("Hookify for Codex installed.");
     expect(stdout).toContain("Plugin id: hookify@hookify-local");
-    expect(stdout).toContain("/plugin marketplace add jasonkuhrt/hookify");
-    expect(stdout).toContain("/plugin install hookify-claude@hookify");
+    expect(stdout).toContain("Hookify for Claude installed.");
+    expect(stdout).toContain("Plugin id: hookify-claude@hookify");
   } finally {
     await rm(workspacePath, { recursive: true, force: true });
   }
