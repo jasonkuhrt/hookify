@@ -10,6 +10,7 @@ const main = async (): Promise<void> => {
       "Hookify for Codex installed.",
       `Plugin id: ${result.installedPluginId}`,
       `Home plugin link: ${result.pluginLinkPath}`,
+      `Codex plugin cache: ${result.codexPluginCachePath}`,
       `Marketplace: ${result.personalMarketplacePath}`,
       `Codex config: ${result.codexConfigPath}`,
       `Codex hooks cleanup: ${result.codexHooksPath}`,

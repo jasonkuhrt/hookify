@@ -11,10 +11,19 @@ test("install-codex symlinks the repo plugin and cleans legacy user hooks", asyn
 
   try {
     const homeDirectoryPath = join(workspacePath, "home");
-    const codexHooksPath = join(homeDirectoryPath, ".codex", "hooks.json");
-    const codexConfigPath = join(homeDirectoryPath, ".codex", "config.toml");
+    const codexHomePath = join(homeDirectoryPath, ".codex");
+    const codexHooksPath = join(codexHomePath, "hooks.json");
+    const codexConfigPath = join(codexHomePath, "config.toml");
     const marketplacePath = join(homeDirectoryPath, ".agents", "plugins", "marketplace.json");
     const pluginLinkPath = join(homeDirectoryPath, "plugins", "hookify");
+    const codexPluginCachePath = join(
+      codexHomePath,
+      "plugins",
+      "cache",
+      "hookify-local",
+      "hookify",
+      "local",
+    );
     const installScriptPath = join(import.meta.dir, "install-codex.ts");
 
     await mkdir(dirname(codexHooksPath), { recursive: true });
@@ -81,12 +90,14 @@ test("install-codex symlinks the repo plugin and cleans legacy user hooks", asyn
     expect(stdout).toContain("Hookify for Codex installed.");
     expect(stdout).toContain("Plugin id: hookify@hookify-local");
 
-    const [configText, marketplaceText, cleanedHooksText, pluginLinkMetadata] = await Promise.all([
-      readFile(codexConfigPath, "utf8"),
-      readFile(marketplacePath, "utf8"),
-      readFile(codexHooksPath, "utf8"),
-      lstat(pluginLinkPath),
-    ]);
+    const [configText, marketplaceText, cleanedHooksText, pluginLinkMetadata, cacheLinkMetadata] =
+      await Promise.all([
+        readFile(codexConfigPath, "utf8"),
+        readFile(marketplacePath, "utf8"),
+        readFile(codexHooksPath, "utf8"),
+        lstat(pluginLinkPath),
+        lstat(codexPluginCachePath),
+      ]);
 
     expect(configText).toContain("[features]");
     expect(configText).toContain("codex_hooks = true");
@@ -129,6 +140,10 @@ test("install-codex symlinks the repo plugin and cleans legacy user hooks", asyn
     });
     expect(pluginLinkMetadata.isSymbolicLink()).toBe(true);
     expect(await realpath(pluginLinkPath)).toBe(
+      await realpath(join(repoRootPath, "plugins", "hookify")),
+    );
+    expect(cacheLinkMetadata.isSymbolicLink()).toBe(true);
+    expect(await realpath(codexPluginCachePath)).toBe(
       await realpath(join(repoRootPath, "plugins", "hookify")),
     );
   } finally {

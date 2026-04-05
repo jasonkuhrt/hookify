@@ -54,12 +54,14 @@ export interface InstallHookifyCodexResult {
   personalMarketplacePath: string;
   codexConfigPath: string;
   codexHooksPath: string;
+  codexPluginCachePath: string;
 }
 
 export const installHookifyCodex = async (
   options: InstallHookifyCodexOptions = {},
 ): Promise<InstallHookifyCodexResult> => {
   const homeDirectory = resolve(options.homeDirectory ?? process.env.HOME ?? homedir());
+  const codexHomeDirectory = resolve(process.env.CODEX_HOME ?? join(homeDirectory, ".codex"));
   const repoPath = resolve(
     options.repoPath ??
       process.env.HOOKIFY_REPO_DIR ??
@@ -68,8 +70,8 @@ export const installHookifyCodex = async (
   const repoPluginPath = join(repoPath, "plugins", "hookify");
   const pluginLinkPath = join(homeDirectory, "plugins", "hookify");
   const personalMarketplacePath = join(homeDirectory, ".agents", "plugins", "marketplace.json");
-  const codexConfigPath = join(homeDirectory, ".codex", "config.toml");
-  const codexHooksPath = join(homeDirectory, ".codex", "hooks.json");
+  const codexConfigPath = join(codexHomeDirectory, "config.toml");
+  const codexHooksPath = join(codexHomeDirectory, "hooks.json");
   const repoPluginManifestPath = join(repoPluginPath, ".codex-plugin", "plugin.json");
   const repoBundledDispatcherPath = join(repoPluginPath, "hooks", "dispatch-codex.mjs");
 
@@ -84,6 +86,16 @@ export const installHookifyCodex = async (
   await replaceWithSymlink(repoPluginPath, pluginLinkPath);
 
   const marketplaceName = await upsertCodexMarketplace(personalMarketplacePath);
+  const codexPluginCachePath = join(
+    codexHomeDirectory,
+    "plugins",
+    "cache",
+    marketplaceName,
+    "hookify",
+    "local",
+  );
+
+  await replaceWithSymlink(repoPluginPath, codexPluginCachePath);
   await ensureCodexConfig(codexConfigPath, marketplaceName);
   await removeLegacyHookifyCodexHooks(codexHooksPath);
 
@@ -93,6 +105,7 @@ export const installHookifyCodex = async (
     personalMarketplacePath,
     codexConfigPath,
     codexHooksPath,
+    codexPluginCachePath,
   };
 };
 
