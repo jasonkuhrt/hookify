@@ -204,7 +204,7 @@ var toClaudeAdditionalContextOutput = (event, additionalContext) => {
 // packages/runtime/src/index.ts
 import { spawn } from "node:child_process";
 import { mkdtemp, readdir, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { basename as basename2, dirname, isAbsolute, join } from "node:path";
 import { homedir, tmpdir } from "node:os";
 
 // packages/core/src/index.ts
@@ -392,13 +392,19 @@ var resolveHookifyRuntimeContext = async (options) => {
   const ancestors = collectAncestorPaths(cwd, boundaryRoot);
   const discoveredProjectRoots = await filterHookifyRoots(ancestors);
   const projectRoot = discoveredProjectRoots.at(-1)?.rootPath ?? boundaryRoot;
+  const mainWorktreeRoots = [];
+  const mainWorktreeRoot = gitRoot ? await findMainWorktreeRoot(gitRoot) : undefined;
+  if (mainWorktreeRoot !== undefined && mainWorktreeRoot !== gitRoot && !discoveredProjectRoots.some((root) => root.rootPath === mainWorktreeRoot) && await isDirectory(join(mainWorktreeRoot, HOOKIFY_DIRECTORY_NAME))) {
+    mainWorktreeRoots.push({ scope: "project", rootPath: mainWorktreeRoot });
+  }
+  const projectRoots = [...discoveredProjectRoots, ...mainWorktreeRoots];
   return {
     cwd,
     projectRoot,
     ...gitRoot ? { gitRoot } : {},
     roots: [
       ...homeDirectory ? [{ scope: "user", rootPath: homeDirectory }] : [],
-      ...discoveredProjectRoots.length > 0 ? discoveredProjectRoots : [{ scope: "project", rootPath: boundaryRoot }]
+      ...projectRoots.length > 0 ? projectRoots : [{ scope: "project", rootPath: boundaryRoot }]
     ]
   };
 };
@@ -776,6 +782,42 @@ var resolveDirectoryPathIfPossible = async (pathname) => {
     throw new Error(`Expected a directory: ${pathname}`);
   }
   return resolvedPathname;
+};
+var findMainWorktreeRoot = async (gitRoot) => {
+  const gitPath = join(gitRoot, ".git");
+  let info;
+  try {
+    info = await stat(gitPath);
+  } catch {
+    return;
+  }
+  if (info.isDirectory()) {
+    return gitRoot;
+  }
+  if (!info.isFile()) {
+    return;
+  }
+  let content;
+  try {
+    content = await readFile(gitPath, "utf8");
+  } catch {
+    return;
+  }
+  const match = content.match(/^gitdir:\s*(.+?)\s*$/m);
+  if (!match) {
+    return;
+  }
+  const gitdir = isAbsolute(match[1]) ? match[1] : join(gitRoot, match[1]);
+  const worktreesDir = dirname(gitdir);
+  const dotGitDir = dirname(worktreesDir);
+  if (basename2(worktreesDir) !== "worktrees" || basename2(dotGitDir) !== ".git") {
+    return;
+  }
+  const mainWorktreeRoot = dirname(dotGitDir);
+  if (!await isDirectory(mainWorktreeRoot)) {
+    return;
+  }
+  return resolvePathname(mainWorktreeRoot);
 };
 var findGitRoot = async (cwd) => {
   let current = cwd;

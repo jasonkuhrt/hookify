@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { mkdir, mkdtemp, realpath, rm, symlink } from "node:fs/promises";
+import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -83,6 +83,128 @@ test("resolveHookifyRuntimeContext discovers user scope plus nested project hook
         },
       ],
     });
+  } finally {
+    await rm(workspacePath, { recursive: true, force: true });
+  }
+});
+
+test("resolveHookifyRuntimeContext discovers the main worktree's hookify root from a linked worktree", async () => {
+  const workspacePath = await mkdtemp(join(tmpdir(), "hookify-runtime-"));
+
+  try {
+    const homeDirectoryPath = join(workspacePath, "home");
+    const mainWorktreePath = join(workspacePath, "repo");
+    const linkedWorktreePath = join(workspacePath, "repo.linked");
+
+    await mkdir(join(homeDirectoryPath, ".hookify"), { recursive: true });
+    // Main worktree: real .git directory + a main-owned .hookify/ root.
+    await mkdir(join(mainWorktreePath, ".git", "worktrees", "linked"), { recursive: true });
+    await mkdir(join(mainWorktreePath, ".hookify"), { recursive: true });
+    // Linked worktree: a sibling dir whose .git is a FILE pointing back at the
+    // main worktree's administrative dir, exactly as `git worktree add` writes it.
+    await mkdir(linkedWorktreePath, { recursive: true });
+
+    const resolvedHomeDirectoryPath = await realpath(homeDirectoryPath);
+    const resolvedMainWorktreePath = await realpath(mainWorktreePath);
+    const resolvedLinkedWorktreePath = await realpath(linkedWorktreePath);
+
+    await writeFile(
+      join(linkedWorktreePath, ".git"),
+      `gitdir: ${join(resolvedMainWorktreePath, ".git", "worktrees", "linked")}\n`,
+    );
+
+    const context = await resolveHookifyRuntimeContext({
+      cwd: linkedWorktreePath,
+      homeDirectory: homeDirectoryPath,
+    });
+
+    expect(context).toEqual({
+      cwd: resolvedLinkedWorktreePath,
+      // The current worktree carries no .hookify/, so projectRoot falls back to
+      // its own root — the main worktree contributes a discovery root only.
+      projectRoot: resolvedLinkedWorktreePath,
+      gitRoot: resolvedLinkedWorktreePath,
+      roots: [
+        {
+          scope: "user",
+          rootPath: resolvedHomeDirectoryPath,
+        },
+        {
+          scope: "project",
+          rootPath: resolvedMainWorktreePath,
+        },
+      ],
+    });
+  } finally {
+    await rm(workspacePath, { recursive: true, force: true });
+  }
+});
+
+test("resolveHookifyRuntimeContext ignores a stale main-worktree pointer without throwing", async () => {
+  const workspacePath = await mkdtemp(join(tmpdir(), "hookify-runtime-"));
+
+  try {
+    const homeDirectoryPath = join(workspacePath, "home");
+    const linkedWorktreePath = join(workspacePath, "repo.linked");
+    await mkdir(join(homeDirectoryPath, ".hookify"), { recursive: true });
+    await mkdir(linkedWorktreePath, { recursive: true });
+
+    const resolvedHomeDirectoryPath = await realpath(homeDirectoryPath);
+    const resolvedLinkedWorktreePath = await realpath(linkedWorktreePath);
+
+    // Pointer has the right shape but the main worktree does not exist (moved/removed).
+    await writeFile(
+      join(linkedWorktreePath, ".git"),
+      `gitdir: ${join(workspacePath, "gone", ".git", "worktrees", "linked")}\n`,
+    );
+
+    const context = await resolveHookifyRuntimeContext({
+      cwd: linkedWorktreePath,
+      homeDirectory: homeDirectoryPath,
+    });
+
+    // No throw, and no project root pointing at the missing main worktree.
+    expect(context.roots).toEqual([
+      { scope: "user", rootPath: resolvedHomeDirectoryPath },
+      { scope: "project", rootPath: resolvedLinkedWorktreePath },
+    ]);
+  } finally {
+    await rm(workspacePath, { recursive: true, force: true });
+  }
+});
+
+test("resolveHookifyRuntimeContext does not treat a submodule .git pointer as a worktree", async () => {
+  const workspacePath = await mkdtemp(join(tmpdir(), "hookify-runtime-"));
+
+  try {
+    const homeDirectoryPath = join(workspacePath, "home");
+    const superProjectPath = join(workspacePath, "super");
+    const submodulePath = join(superProjectPath, "vendor", "lib");
+    await mkdir(join(homeDirectoryPath, ".hookify"), { recursive: true });
+    // The superproject owns a .hookify/ that must NOT leak into the submodule.
+    await mkdir(join(superProjectPath, ".git", "modules", "vendor", "lib"), { recursive: true });
+    await mkdir(join(superProjectPath, ".hookify"), { recursive: true });
+    await mkdir(submodulePath, { recursive: true });
+
+    const resolvedHomeDirectoryPath = await realpath(homeDirectoryPath);
+    const resolvedSubmodulePath = await realpath(submodulePath);
+
+    await writeFile(
+      join(submodulePath, ".git"),
+      `gitdir: ${join(await realpath(superProjectPath), ".git", "modules", "vendor", "lib")}\n`,
+    );
+
+    const context = await resolveHookifyRuntimeContext({
+      cwd: submodulePath,
+      homeDirectory: homeDirectoryPath,
+    });
+
+    // .git/modules/... is not a worktree pointer, so the superproject's .hookify/
+    // is not adopted as a discovery root.
+    expect(context.roots).toEqual([
+      { scope: "user", rootPath: resolvedHomeDirectoryPath },
+      { scope: "project", rootPath: resolvedSubmodulePath },
+    ]);
   } finally {
     await rm(workspacePath, { recursive: true, force: true });
   }

@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { mkdtemp, readdir, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { basename, dirname, isAbsolute, join } from "node:path";
 import { homedir, tmpdir } from "node:os";
 
 import {
@@ -209,6 +209,24 @@ export const resolveHookifyRuntimeContext = async (
   const discoveredProjectRoots = await filterHookifyRoots(ancestors);
   const projectRoot = discoveredProjectRoots.at(-1)?.rootPath ?? boundaryRoot;
 
+  // Worktree-aware discovery: a hook authored in the MAIN worktree's `.hookify/`
+  // should run from every linked worktree of the same repository. A linked
+  // worktree is a sibling of the main worktree, not an ancestor, so the ancestor
+  // walk above never sees it. Resolve the main worktree explicitly (filesystem
+  // only — no `git` subprocess on the hook hot path) and append it as a project
+  // root, after this worktree's own roots, when it carries a `.hookify/`.
+  const mainWorktreeRoots: HookifyExecutionRoot[] = [];
+  const mainWorktreeRoot = gitRoot ? await findMainWorktreeRoot(gitRoot) : undefined;
+  if (
+    mainWorktreeRoot !== undefined &&
+    mainWorktreeRoot !== gitRoot &&
+    !discoveredProjectRoots.some((root) => root.rootPath === mainWorktreeRoot) &&
+    (await isDirectory(join(mainWorktreeRoot, HOOKIFY_DIRECTORY_NAME)))
+  ) {
+    mainWorktreeRoots.push({ scope: "project", rootPath: mainWorktreeRoot });
+  }
+  const projectRoots = [...discoveredProjectRoots, ...mainWorktreeRoots];
+
   return {
     cwd,
     projectRoot,
@@ -217,8 +235,8 @@ export const resolveHookifyRuntimeContext = async (
       ...(homeDirectory
         ? [{ scope: "user", rootPath: homeDirectory } satisfies HookifyExecutionRoot]
         : []),
-      ...(discoveredProjectRoots.length > 0
-        ? discoveredProjectRoots
+      ...(projectRoots.length > 0
+        ? projectRoots
         : [{ scope: "project", rootPath: boundaryRoot } satisfies HookifyExecutionRoot]),
     ],
   };
@@ -765,6 +783,59 @@ const resolveDirectoryPathIfPossible = async (pathname: string): Promise<string>
   }
 
   return resolvedPathname;
+};
+
+// Resolve the main worktree root from a (possibly linked) worktree root, using
+// the filesystem only. The main worktree's `.git` is a directory. A linked
+// worktree's `.git` is a file containing `gitdir: <main>/.git/worktrees/<name>`;
+// the main worktree is the directory that owns that `.git`. Returns the input
+// when it is already the main worktree, or undefined when the shape is unknown.
+const findMainWorktreeRoot = async (gitRoot: string): Promise<string | undefined> => {
+  const gitPath = join(gitRoot, ".git");
+
+  let info;
+  try {
+    info = await stat(gitPath);
+  } catch {
+    return undefined;
+  }
+
+  if (info.isDirectory()) {
+    return gitRoot;
+  }
+  if (!info.isFile()) {
+    return undefined;
+  }
+
+  let content: string;
+  try {
+    content = await readFile(gitPath, "utf8");
+  } catch {
+    return undefined;
+  }
+
+  const match = content.match(/^gitdir:\s*(.+?)\s*$/m);
+  if (!match) {
+    return undefined;
+  }
+
+  // gitdir: <main>/.git/worktrees/<name>  ->  climb to <main>.
+  const gitdir = isAbsolute(match[1]) ? match[1] : join(gitRoot, match[1]);
+  const worktreesDir = dirname(gitdir);
+  const dotGitDir = dirname(worktreesDir);
+  if (basename(worktreesDir) !== "worktrees" || basename(dotGitDir) !== ".git") {
+    return undefined;
+  }
+
+  // The pointer can be stale (main worktree moved/removed). Resolve defensively:
+  // a missing or non-directory target yields undefined, never a thrown error
+  // that would crash all hook resolution.
+  const mainWorktreeRoot = dirname(dotGitDir);
+  if (!(await isDirectory(mainWorktreeRoot))) {
+    return undefined;
+  }
+
+  return resolvePathname(mainWorktreeRoot);
 };
 
 const findGitRoot = async (cwd: string): Promise<string | undefined> => {
